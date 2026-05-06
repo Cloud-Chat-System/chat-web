@@ -1,0 +1,35 @@
+services:
+  frontend:
+    build: ./frontend
+    container_name: chat_frontend
+    ports:
+      - "3000:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://140.114.91.23:8000
+
+  backend:
+    build: ./backend
+    container_name: chat_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16.6
+    container_name: chat_db
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+
+volumes:
+  postgres_data:
