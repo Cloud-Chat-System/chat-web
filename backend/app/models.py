@@ -19,6 +19,7 @@ class User(Base):
     avatar_url = Column(Text)
     auth_provider = Column(String(30), default="local")
     provider_user_id = Column(String(255))
+    token_version = Column(Integer, nullable=False, default=0)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
