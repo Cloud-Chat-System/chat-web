@@ -19,3 +19,15 @@ logs:
 
 ps:
 	docker compose ps
+
+test-backend:
+	docker compose exec backend pytest -v
+
+test-backend-file:
+	docker compose exec backend pytest -v $(FILE)
+
+test-unit:
+	docker compose exec backend pytest -m unit
+
+test-smoke:
+	docker compose exec backend pytest -m smoke

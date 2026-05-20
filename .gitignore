@@ -10,3 +10,6 @@ build/
 
 postgres_data/
 .DS_Store
+
+*_test.db
+*.db
