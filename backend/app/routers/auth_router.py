@@ -1,11 +1,11 @@
-"""Authentication routes: register, login, Google OAuth (simulated), and current user."""
+"""Authentication routes: register, login, and current user."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import User, UserPresence
-from ..schemas import RegisterRequest, LoginRequest, GoogleLoginRequest, AuthResponse, UserOut
+from ..schemas import RegisterRequest, LoginRequest, AuthResponse, UserOut
 from ..auth import hash_password, verify_password, create_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -58,55 +58,6 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     if presence:
         presence.status = "online"
     db.commit()
-
-    return AuthResponse(
-        token=token,
-        user=UserOut.model_validate(user),
-    )
-
-
-@router.post("/google", response_model=AuthResponse)
-def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
-    """
-    Simulated Google OAuth login.
-    In production, this would exchange an authorization code for user info.
-    For now, it accepts email + name directly and creates/logs in the user.
-    """
-    user = db.query(User).filter(User.email == req.email).first()
-
-    if not user:
-        # Auto-create account for Google users
-        username = req.email.split("@")[0]
-        # Ensure unique username
-        base_username = username
-        counter = 1
-        while db.query(User).filter(User.username == username).first():
-            username = f"{base_username}_{counter}"
-            counter += 1
-
-        user = User(
-            username=username,
-            email=req.email,
-            display_name=req.name,
-            auth_provider="google",
-            password_hash=None,  # No password for OAuth users
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-
-        # Create presence record
-        presence = UserPresence(user_id=user.id, status="online")
-        db.add(presence)
-        db.commit()
-    else:
-        # Update presence to online
-        presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
-        if presence:
-            presence.status = "online"
-        db.commit()
-
-    token = create_token(user.id, user.email)
 
     return AuthResponse(
         token=token,

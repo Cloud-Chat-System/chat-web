@@ -37,24 +37,6 @@ export const useAuthStore = create((set) => ({
     }
   },
 
-  loginWithGoogle: async () => {
-    set({ isLoading: true, error: null })
-    // Simulate until real OAuth is added
-    try {
-      const res = await api.post('/auth/google', {
-        email: 'haozhe.xie@tsmc.com',
-        name: '謝浩哲',
-        google_id: '123456'
-      });
-      localStorage.setItem('token', res.data.token);
-      set({ user: res.data.user, isLoading: false });
-      return res.data.user;
-    } catch (error) {
-      set({ isLoading: false, error: 'Google 登入失敗' });
-      throw error;
-    }
-  },
-
   register: async (name, email, password) => {
     set({ isLoading: true, error: null })
     try {
