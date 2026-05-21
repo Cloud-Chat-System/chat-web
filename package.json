@@ -1,0 +1,16 @@
+{
+  "name": "chat-web-tooling",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint-staged": "lint-staged --relative"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "backend/**/*.py": "scripts/lint-staged-backend.sh",
+    "frontend/**/*.{js,jsx}": "scripts/lint-staged-frontend.sh"
+  }
+}
