@@ -3,17 +3,17 @@
 from contextlib import asynccontextmanager
 import os
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-from .database import engine, Base, get_db
-from .models import User, UserPresence, ChatRoomMember
 from .auth import decode_token
-from .ws_manager import ws_manager
+from .database import Base, engine, get_db
+from .models import ChatRoomMember, UserPresence
 from .routers import auth_router, chatroom_router, user_router
+from .ws_manager import ws_manager
 
 
 @asynccontextmanager
@@ -33,7 +33,7 @@ app = FastAPI(
 # CORS — allow frontend dev server and production
 frontend_url = os.getenv("FRONTEND_URL")
 allowed_origins = [
-    "http://localhost:5173", 
+    "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://localhost:5174",
     "http://127.0.0.1:5174",

@@ -4,13 +4,8 @@ import { useAuthStore } from '../../store/useAuthStore'
 import { formatMessageTime, formatDateDivider, shouldShowDateDivider } from '../../utils/formatTime'
 import Avatar from '../common/Avatar'
 import {
-  FiPhone,
-  FiVideo,
   FiInfo,
   FiSend,
-  FiSmile,
-  FiPlus,
-  FiImage,
   FiMessageCircle,
   FiArrowLeft,
 } from 'react-icons/fi'

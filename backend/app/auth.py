@@ -1,12 +1,11 @@
 """Authentication utilities: JWT token generation/verification and password hashing."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 
 import jwt
-from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from .config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRE_HOURS

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useChatStore } from '../../store/useChatStore'
-import { useAuthStore } from '../../store/useAuthStore'
 import api from '../../utils/api'
 import chatStyles from '../../styles/chat.module.css'
 
@@ -71,7 +70,7 @@ export default function NewChatModal({ onClose }) {
         if (res) onClose()
         else setError('建立群組聊天失敗')
       }
-    } catch (err) {
+    } catch {
       setError('發生錯誤，請稍後再試')
     }
   }

@@ -1,13 +1,13 @@
 """User search and info routes."""
 
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import User, UserPresence
-from ..schemas import UserOut
 from ..auth import get_current_user
+from ..database import get_db
+from ..models import User
+from ..schemas import UserOut
 from ..ws_manager import ws_manager
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -24,7 +24,7 @@ def search_users(
         db.query(User)
         .filter(
             User.id != current_user.id,
-            User.is_active == True,
+            User.is_active.is_(True),
             or_(
                 User.username.ilike(f"%{q}%"),
                 User.email.ilike(f"%{q}%"),
@@ -50,7 +50,6 @@ def get_user(
     db: Session = Depends(get_db),
 ):
     """Get a specific user's info."""
-    from fastapi import HTTPException
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="找不到使用者")
