@@ -20,6 +20,12 @@ logs:
 ps:
 	docker compose ps
 
+lint-backend:
+	docker compose exec backend python -m ruff check app tests
+
+lint-frontend:
+	docker compose exec frontend npm run lint
+
 test-backend:
 	docker compose exec backend pytest -v
 
