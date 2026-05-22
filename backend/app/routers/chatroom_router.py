@@ -5,7 +5,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func
 
 from ..database import get_db
 from ..models import ChatRoom, ChatRoomMember, Message, User, UserPresence
@@ -14,6 +14,67 @@ from ..auth import get_current_user
 from ..ws_manager import ws_manager
 
 router = APIRouter(prefix="/chatrooms", tags=["chatrooms"])
+
+
+def _build_chatroom_out(room: ChatRoom, viewer_id: int, db: Session) -> ChatRoomOut:
+    """Build a room response using the viewer's direct-chat display name."""
+    room_members = (
+        db.query(User)
+        .join(ChatRoomMember, ChatRoomMember.user_id == User.id)
+        .filter(ChatRoomMember.room_id == room.id)
+        .all()
+    )
+
+    membership = (
+        db.query(ChatRoomMember)
+        .filter(ChatRoomMember.room_id == room.id, ChatRoomMember.user_id == viewer_id)
+        .first()
+    )
+
+    last_msg = (
+        db.query(Message)
+        .filter(Message.room_id == room.id)
+        .order_by(Message.created_at.desc())
+        .first()
+    )
+
+    unread_count = 0
+    if membership:
+        unread_count = (
+            db.query(func.count(Message.id))
+            .filter(
+                Message.room_id == room.id,
+                Message.created_at > membership.last_read_at,
+                Message.sender_id != viewer_id,
+            )
+            .scalar()
+        ) or 0
+
+    display_name = room.name
+    if room.room_type == "direct":
+        other_member = next((m for m in room_members if m.id != viewer_id), None)
+        if other_member:
+            display_name = other_member.display_name or other_member.username
+
+    last_message_text = None
+    if last_msg:
+        sender = db.query(User).filter(User.id == last_msg.sender_id).first()
+        if room.room_type == "group" and sender:
+            last_message_text = f"{sender.display_name or sender.username}: {last_msg.content}"
+        else:
+            last_message_text = last_msg.content
+
+    return ChatRoomOut(
+        id=room.id,
+        name=display_name,
+        room_type=room.room_type,
+        created_by=room.created_by,
+        last_message_at=room.last_message_at,
+        created_at=room.created_at,
+        members=[UserOut.model_validate(m) for m in room_members],
+        last_message=last_message_text,
+        unread_count=unread_count,
+    )
 
 
 @router.get("", response_model=list[ChatRoomOut])
@@ -32,59 +93,7 @@ def get_chatrooms(current_user: User = Depends(get_current_user), db: Session = 
         if not room:
             continue
 
-        # Get member user objects
-        room_members = (
-            db.query(User)
-            .join(ChatRoomMember, ChatRoomMember.user_id == User.id)
-            .filter(ChatRoomMember.room_id == room.id)
-            .all()
-        )
-
-        # Get last message
-        last_msg = (
-            db.query(Message)
-            .filter(Message.room_id == room.id)
-            .order_by(Message.created_at.desc())
-            .first()
-        )
-
-        # Count unread messages (messages after last_read_at)
-        unread_count = (
-            db.query(func.count(Message.id))
-            .filter(
-                Message.room_id == room.id,
-                Message.created_at > membership.last_read_at,
-                Message.sender_id != current_user.id,
-            )
-            .scalar()
-        ) or 0
-
-        # For direct chats, use the other person's name as room name
-        display_name = room.name
-        if room.room_type == "direct":
-            other_member = next((m for m in room_members if m.id != current_user.id), None)
-            if other_member:
-                display_name = other_member.display_name or other_member.username
-
-        last_message_text = None
-        if last_msg:
-            sender = db.query(User).filter(User.id == last_msg.sender_id).first()
-            if room.room_type == "group" and sender:
-                last_message_text = f"{sender.display_name or sender.username}: {last_msg.content}"
-            else:
-                last_message_text = last_msg.content
-
-        results.append(ChatRoomOut(
-            id=room.id,
-            name=display_name,
-            room_type=room.room_type,
-            created_by=room.created_by,
-            last_message_at=room.last_message_at,
-            created_at=room.created_at,
-            members=[UserOut.model_validate(m) for m in room_members],
-            last_message=last_message_text,
-            unread_count=unread_count,
-        ))
+        results.append(_build_chatroom_out(room, current_user.id, db))
 
     # Sort by last_message_at descending
     results.sort(key=lambda r: r.last_message_at or r.created_at, reverse=True)
@@ -92,7 +101,7 @@ def get_chatrooms(current_user: User = Depends(get_current_user), db: Session = 
 
 
 @router.post("", response_model=ChatRoomOut, status_code=201)
-def create_chatroom(
+async def create_chatroom(
     req: ChatRoomCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -117,20 +126,7 @@ def create_chatroom(
         for room in existing:
             members_ids = [m.user_id for m in room.members]
             if other_id in members_ids and current_user.id in members_ids and len(members_ids) == 2:
-                # Return existing room
-                room_members = db.query(User).join(ChatRoomMember).filter(ChatRoomMember.room_id == room.id).all()
-                other = next((m for m in room_members if m.id != current_user.id), None)
-                return ChatRoomOut(
-                    id=room.id,
-                    name=other.display_name if other else None,
-                    room_type=room.room_type,
-                    created_by=room.created_by,
-                    last_message_at=room.last_message_at,
-                    created_at=room.created_at,
-                    members=[UserOut.model_validate(m) for m in room_members],
-                    last_message=None,
-                    unread_count=0,
-                )
+                return _build_chatroom_out(room, current_user.id, db)
 
         # Verify other user exists
         other_user = db.query(User).filter(User.id == other_id).first()
@@ -171,25 +167,22 @@ def create_chatroom(
 
     db.commit()
 
-    # Fetch full member list for response
-    room_members = db.query(User).join(ChatRoomMember).filter(ChatRoomMember.room_id == room.id).all()
+    member_ids = [
+        m.user_id
+        for m in db.query(ChatRoomMember).filter(ChatRoomMember.room_id == room.id).all()
+    ]
 
-    display_name = room.name
-    if room.room_type == "direct":
-        other = next((m for m in room_members if m.id != current_user.id), None)
-        display_name = other.display_name if other else None
+    for member_id in member_ids:
+        room_out = _build_chatroom_out(room, member_id, db)
+        await ws_manager.send_to_user(
+            member_id,
+            {
+                "type": "chatroom_created",
+                "data": room_out.model_dump(mode="json"),
+            },
+        )
 
-    return ChatRoomOut(
-        id=room.id,
-        name=display_name,
-        room_type=room.room_type,
-        created_by=room.created_by,
-        last_message_at=room.last_message_at,
-        created_at=room.created_at,
-        members=[UserOut.model_validate(m) for m in room_members],
-        last_message=None,
-        unread_count=0,
-    )
+    return _build_chatroom_out(room, current_user.id, db)
 
 
 @router.get("/{room_id}/messages", response_model=MessageListResponse)
