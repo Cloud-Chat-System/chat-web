@@ -136,6 +136,8 @@ async def create_chatroom(
     elif req.room_type == "group":
         if not req.name:
             raise HTTPException(status_code=400, detail="群組聊天需要名稱")
+        if len(req.member_ids) == 0:
+            raise HTTPException(status_code=400, detail="群組聊天至少需要一位其他成員")
     else:
         raise HTTPException(status_code=400, detail="room_type 必須是 'direct' 或 'group'")
 

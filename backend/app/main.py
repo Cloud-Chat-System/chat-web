@@ -5,7 +5,9 @@ import os
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from .database import engine, Base, get_db
 from .models import User, UserPresence, ChatRoomMember
@@ -62,10 +64,28 @@ def health_check():
     return {"status": "ok", "service": "TSMC Messenger API"}
 
 
+def _check_database_health() -> tuple[bool, str]:
+    """Verify that the database is reachable."""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return True, "ok"
+    except Exception:
+        return False, "unavailable"
+
+
 @app.get("/api/health")
 def api_health_check():
-    """Compatibility health check endpoint."""
-    return health_check()
+    """Readiness check endpoint with database status."""
+    db_ok, db_status = _check_database_health()
+    payload = {
+        "service": "TSMC Messenger API",
+        "status": "ok" if db_ok else "degraded",
+        "database": db_status,
+    }
+    if not db_ok:
+        return JSONResponse(status_code=503, content=payload)
+    return payload
 
 
 @app.websocket("/ws")

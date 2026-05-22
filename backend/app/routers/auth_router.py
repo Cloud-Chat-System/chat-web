@@ -51,13 +51,14 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
     if not verify_password(req.password, user.password_hash):
         raise HTTPException(status_code=401, detail="帳號或密碼錯誤")
 
-    token = create_token(user.id, user.email)
+    token = create_token(user.id, user.email, user.token_version)
 
     # Update presence to online
     presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
     if presence:
         presence.status = "online"
     db.commit()
+    db.refresh(user)
 
     return AuthResponse(
         token=token,
@@ -77,5 +78,6 @@ def logout(current_user: User = Depends(get_current_user), db: Session = Depends
     presence = db.query(UserPresence).filter(UserPresence.user_id == current_user.id).first()
     if presence:
         presence.status = "offline"
-        db.commit()
+    current_user.token_version += 1
+    db.commit()
     return {"message": "已登出"}

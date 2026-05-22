@@ -30,11 +30,12 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 # ── JWT Token ─────────────────────────────────────────
 
-def create_token(user_id: int, email: str) -> str:
+def create_token(user_id: int, email: str, token_version: int = 0) -> str:
     """Create a JWT token with user_id and email claims."""
     payload = {
         "sub": str(user_id),
         "email": email,
+        "ver": token_version,
         "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRE_HOURS),
         "iat": datetime.now(timezone.utc),
     }
@@ -64,9 +65,12 @@ def get_current_user(
     """FastAPI dependency: extracts and verifies JWT, returns the current User object."""
     payload = decode_token(credentials.credentials)
     user_id = int(payload.get("sub", 0))
+    token_version = int(payload.get("ver", 0))
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="使用者不存在或已停用")
+    if user.token_version != token_version:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token 已失效")
 
     return user
