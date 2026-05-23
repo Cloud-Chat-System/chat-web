@@ -131,7 +131,7 @@ pressure-light:
 		sleep 2; \
 	done
 	docker compose up --build -d backend
-	@status=0; npm run pressure:light || status=$$?; docker compose down; exit $$status
+	@status=0; npm run test:pressure:light || status=$$?; docker compose down; exit $$status
 
 pressure-mid:
 	docker compose up -d db
@@ -146,7 +146,7 @@ pressure-mid:
 		sleep 2; \
 	done
 	docker compose up --build -d backend
-	@status=0; npm run pressure:mid || status=$$?; docker compose down; exit $$status
+	@status=0; npm run test:pressure:mid || status=$$?; docker compose down; exit $$status
 
 pressure-heavy:
 	docker compose up -d db
@@ -161,7 +161,7 @@ pressure-heavy:
 		sleep 2; \
 	done
 	docker compose up --build -d backend
-	@status=0; npm run pressure:heavy || status=$$?; docker compose down; exit $$status
+	@status=0; npm run test:pressure:heavy || status=$$?; docker compose down; exit $$status
 
 pressure-custom:
 	docker compose up -d db
@@ -176,7 +176,7 @@ pressure-custom:
 		sleep 2; \
 	done
 	docker compose up --build -d backend
-	@status=0; npm run pressure -- $(ARGS) || status=$$?; docker compose down; exit $$status
+	@status=0; npm run test:pressure -- $(ARGS) || status=$$?; docker compose down; exit $$status
 
 
 test-backend-file:

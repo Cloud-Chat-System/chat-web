@@ -7,7 +7,6 @@ import asyncio
 import json
 import os
 import statistics
-import sys
 import time
 import uuid
 from collections import defaultdict
