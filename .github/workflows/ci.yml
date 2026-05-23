@@ -92,8 +92,22 @@ jobs:
       - name: Prepare environment
         run: cp .env.example .env
 
-      - name: Start backend services
-        run: docker compose up --build -d db backend
+      - name: Start database
+        run: docker compose up -d db
+
+      - name: Wait for database readiness
+        run: |
+          for i in {1..30}; do
+            if docker compose exec -T db pg_isready -U chat_user -d chat_app; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs db
+          exit 1
+
+      - name: Start backend
+        run: docker compose up --build -d backend
 
       - name: Wait for backend readiness
         run: |

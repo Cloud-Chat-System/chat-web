@@ -100,7 +100,18 @@ test-frontend:
 	fi
 
 test-e2e:
-	docker compose up --build -d db backend
+	docker compose up -d db
+	@for i in $$(seq 1 30); do \
+		if docker compose exec -T db pg_isready -U chat_user -d chat_app; then \
+			break; \
+		fi; \
+		if [ "$$i" -eq 30 ]; then \
+			docker compose logs db; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done
+	docker compose up --build -d backend
 	@status=0; npm run test:e2e || status=$$?; docker compose down; exit $$status
 
 test-e2e-ui:
