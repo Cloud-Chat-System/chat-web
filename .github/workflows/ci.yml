@@ -33,7 +33,7 @@ jobs:
       - name: Run backend smoke tests
         run: python -m pytest backend/tests -m smoke
 
-  frontend-lint-and-build:
+  frontend-lint-test-and-build:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,6 +53,10 @@ jobs:
 
       - name: Lint frontend
         run: npm run lint
+        working-directory: frontend
+
+      - name: Test frontend
+        run: npm run test
         working-directory: frontend
 
       - name: Build frontend

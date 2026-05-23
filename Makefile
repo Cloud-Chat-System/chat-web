@@ -2,7 +2,7 @@
 		dev dev-d watch down reset-db logs ps \
 		setup install-deps install-hooks install-frontend-deps pre-commit-check \
 		lint lint-backend lint-frontend \
-		test test-all test-backend test-backend-file test-unit test-smoke \
+		test test-all test-backend test-frontend test-backend-file test-unit test-smoke \
 		ci-test-simulate-Github-backend ci-test-simulate-Github-frontend ci-test-simulate-Github-all
 
 dev:
@@ -67,7 +67,7 @@ lint-frontend:
 # Tests
 test: test-unit test-smoke
 
-test-all: test-backend
+test-all: test-backend test-frontend
 
 test-backend:
 	@if docker compose ps --services --status running | grep -qx "backend"; then \
@@ -88,6 +88,15 @@ test-smoke:
 		docker compose exec -T backend pytest -v -m smoke; \
 	else \
 		docker compose run --rm -T backend pytest -v -m smoke; \
+	fi
+
+test-frontend:
+	@if [ -d frontend/node_modules ]; then \
+		cd frontend && npm run test; \
+	elif docker compose ps --services --status running 2>/dev/null | grep -qx "frontend"; then \
+		docker compose exec -T frontend npm run test; \
+	else \
+		docker compose run --rm -T frontend npm run test; \
 	fi
 
 

@@ -9,6 +9,7 @@ node_modules/
 .husky/_/
 dist/
 build/
+coverage/
 
 postgres_data/
 .DS_Store
