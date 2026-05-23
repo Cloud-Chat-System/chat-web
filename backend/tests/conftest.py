@@ -114,7 +114,11 @@ def client():
 
 
 @pytest.fixture(autouse=True)
-def reset_database():
+def reset_database(request):
+    if request.node.get_closest_marker("pressure"):
+        yield
+        return
+
     ws_manager.active_connections.clear()
     engine.dispose()
     if TEST_DB_PATH.exists():

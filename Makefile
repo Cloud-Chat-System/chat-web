@@ -3,6 +3,7 @@
 		setup install-deps install-hooks install-frontend-deps pre-commit-check \
 		lint lint-backend lint-frontend \
 		test test-all test-backend test-frontend test-e2e test-e2e-ui test-backend-file test-unit test-smoke \
+		pressure-light pressure-mid pressure-heavy pressure-custom \
 		ci-test-simulate-Github-backend ci-test-simulate-Github-frontend ci-test-simulate-Github-all
 
 dev:
@@ -116,6 +117,66 @@ test-e2e:
 
 test-e2e-ui:
 	npm run test:e2e:ui
+
+pressure-light:
+	docker compose up -d db
+	@for i in $$(seq 1 30); do \
+		if docker compose exec -T db pg_isready -U chat_user -d chat_app; then \
+			break; \
+		fi; \
+		if [ "$$i" -eq 30 ]; then \
+			docker compose logs db; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done
+	docker compose up --build -d backend
+	@status=0; npm run pressure:light || status=$$?; docker compose down; exit $$status
+
+pressure-mid:
+	docker compose up -d db
+	@for i in $$(seq 1 30); do \
+		if docker compose exec -T db pg_isready -U chat_user -d chat_app; then \
+			break; \
+		fi; \
+		if [ "$$i" -eq 30 ]; then \
+			docker compose logs db; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done
+	docker compose up --build -d backend
+	@status=0; npm run pressure:mid || status=$$?; docker compose down; exit $$status
+
+pressure-heavy:
+	docker compose up -d db
+	@for i in $$(seq 1 30); do \
+		if docker compose exec -T db pg_isready -U chat_user -d chat_app; then \
+			break; \
+		fi; \
+		if [ "$$i" -eq 30 ]; then \
+			docker compose logs db; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done
+	docker compose up --build -d backend
+	@status=0; npm run pressure:heavy || status=$$?; docker compose down; exit $$status
+
+pressure-custom:
+	docker compose up -d db
+	@for i in $$(seq 1 30); do \
+		if docker compose exec -T db pg_isready -U chat_user -d chat_app; then \
+			break; \
+		fi; \
+		if [ "$$i" -eq 30 ]; then \
+			docker compose logs db; \
+			exit 1; \
+		fi; \
+		sleep 2; \
+	done
+	docker compose up --build -d backend
+	@status=0; npm run pressure -- $(ARGS) || status=$$?; docker compose down; exit $$status
 
 
 test-backend-file:

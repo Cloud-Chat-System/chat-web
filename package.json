@@ -5,7 +5,11 @@
     "prepare": "husky",
     "lint-staged": "lint-staged --relative",
     "test:e2e": "playwright test -c e2e/playwright.config.js",
-    "test:e2e:ui": "playwright test -c e2e/playwright.config.js --ui"
+    "test:e2e:ui": "playwright test -c e2e/playwright.config.js --ui",
+    "pressure": "docker compose exec -T backend python -m pytest --color=yes -s tests/pressure -m pressure --pressure-base-url http://127.0.0.1:8000",
+    "pressure:light": "npm run pressure -- --pressure-scenario light",
+    "pressure:mid": "npm run pressure -- --pressure-scenario mid",
+    "pressure:heavy": "npm run pressure -- --pressure-scenario heavy"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
