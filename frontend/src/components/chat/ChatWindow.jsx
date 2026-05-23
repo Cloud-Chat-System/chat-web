@@ -89,7 +89,7 @@ export default function ChatWindow({ onBack }) {
             showStatus={!activeRoom.isGroup}
           />
           <div className={chatStyles.chatHeaderInfo}>
-            <div className={chatStyles.chatHeaderName}>{activeRoom.name}</div>
+            <div className={chatStyles.chatHeaderName} data-testid="active-chat-name">{activeRoom.name}</div>
             {!activeRoom.isGroup && (
               <div
                 className={`${chatStyles.chatHeaderStatus} ${!isOnline ? chatStyles.chatHeaderOffline : ''
@@ -114,7 +114,7 @@ export default function ChatWindow({ onBack }) {
       </div>
 
       {/* Messages */}
-      <div className={chatStyles.messageList} id="message-list">
+      <div className={chatStyles.messageList} id="message-list" data-testid="message-list">
         {chatMessages.map((msg, index) => {
           const isSelf = msg.senderId === user?.id
           const prevMsg = index > 0 ? chatMessages[index - 1] : null
@@ -152,6 +152,7 @@ export default function ChatWindow({ onBack }) {
                   <div
                     className={`${chatStyles.messageBubble} ${isSelf ? chatStyles.messageBubbleSelf : chatStyles.messageBubbleOther
                       }`}
+                    data-testid="message-bubble"
                   >
                     {msg.content}
                   </div>
@@ -181,6 +182,7 @@ export default function ChatWindow({ onBack }) {
             onKeyDown={handleKeyDown}
             rows={1}
             id="message-input"
+            data-testid="message-input"
           />
           <button
             className={chatStyles.sendBtn}
@@ -188,6 +190,7 @@ export default function ChatWindow({ onBack }) {
             disabled={!inputValue.trim()}
             title="發送"
             id="send-btn"
+            data-testid="send-button"
           >
             <FiSend />
           </button>

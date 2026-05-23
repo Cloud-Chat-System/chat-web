@@ -10,6 +10,8 @@ node_modules/
 dist/
 build/
 coverage/
+playwright-report/
+test-results/
 
 postgres_data/
 .DS_Store

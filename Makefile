@@ -2,7 +2,7 @@
 		dev dev-d watch down reset-db logs ps \
 		setup install-deps install-hooks install-frontend-deps pre-commit-check \
 		lint lint-backend lint-frontend \
-		test test-all test-backend test-frontend test-backend-file test-unit test-smoke \
+		test test-all test-backend test-frontend test-e2e test-e2e-ui test-backend-file test-unit test-smoke \
 		ci-test-simulate-Github-backend ci-test-simulate-Github-frontend ci-test-simulate-Github-all
 
 dev:
@@ -98,6 +98,13 @@ test-frontend:
 	else \
 		docker compose run --rm -T frontend npm run test; \
 	fi
+
+test-e2e:
+	docker compose up --build -d db backend
+	@status=0; npm run test:e2e || status=$$?; docker compose down; exit $$status
+
+test-e2e-ui:
+	npm run test:e2e:ui
 
 
 test-backend-file:

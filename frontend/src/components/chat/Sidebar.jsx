@@ -55,6 +55,7 @@ export default function Sidebar({ onSelectChat }) {
                 onClick={() => setShowNewChat(true)}
                 title="新增聊天室"
                 id="new-chat-btn"
+                data-testid="new-chat-button"
               >
                 <FiEdit />
               </button>
@@ -70,6 +71,7 @@ export default function Sidebar({ onSelectChat }) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               id="search-input"
+              data-testid="chat-search-input"
             />
           </div>
 
@@ -102,6 +104,7 @@ export default function Sidebar({ onSelectChat }) {
                 className={`${styles.chatItem} ${activeChatId === room.id ? styles.chatItemActive : ''}`}
                 onClick={() => handleSelectChat(room)}
                 id={`chat-item-${room.id}`}
+                data-testid="chat-room-item"
               >
                 <div className={styles.chatItemAvatar}>
                   <Avatar
@@ -144,6 +147,7 @@ export default function Sidebar({ onSelectChat }) {
               onClick={handleLogout}
               title="登出"
               id="logout-btn"
+              data-testid="logout-button"
             >
               <FiLogOut />
             </button>

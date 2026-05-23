@@ -80,7 +80,7 @@ export default function NewChatModal({ onClose }) {
   }
 
   return (
-    <div className={chatStyles.modalBackdrop} onClick={handleBackdropClick}>
+    <div className={chatStyles.modalBackdrop} onClick={handleBackdropClick} data-testid="new-chat-modal">
       <div className={chatStyles.modal}>
         <h2 className={chatStyles.modalTitle}>新增聊天室</h2>
         <p className={chatStyles.modalDesc}>
@@ -92,12 +92,14 @@ export default function NewChatModal({ onClose }) {
           <button
             className={`${chatStyles.modalTab} ${mode === 'single' ? chatStyles.modalTabActive : ''}`}
             onClick={() => { setMode('single'); setSelectedUsers([]); setError('') }}
+            data-testid="direct-chat-tab"
           >
             1 對 1 聊天
           </button>
           <button
             className={`${chatStyles.modalTab} ${mode === 'group' ? chatStyles.modalTabActive : ''}`}
             onClick={() => { setMode('group'); setSelectedUsers([]); setError('') }}
+            data-testid="group-chat-tab"
           >
             群組聊天
           </button>
@@ -106,6 +108,7 @@ export default function NewChatModal({ onClose }) {
         {mode === 'group' && (
           <input
             className={chatStyles.modalInput}
+            data-testid="group-name-input"
             placeholder="輸入群組名稱"
             value={groupName}
             onChange={(e) => setGroupName(e.target.value)}
@@ -115,6 +118,7 @@ export default function NewChatModal({ onClose }) {
 
         <input
           className={chatStyles.modalInput}
+          data-testid="user-search-input"
           placeholder="搜尋使用者..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -145,6 +149,7 @@ export default function NewChatModal({ onClose }) {
               return (
                 <div 
                   key={u.id} 
+                  data-testid="user-search-result"
                   onClick={() => toggleUserSelection(u)}
                   style={{ 
                     padding: '12px', 
