@@ -19,9 +19,10 @@ os.environ["JWT_SECRET"] = "requirements-test-secret"
 os.environ["JWT_ALGORITHM"] = "HS256"
 os.environ["JWT_EXPIRE_HOURS"] = "24"
 
-from app.database import Base, SessionLocal, engine
+from app.database import SessionLocal, engine
 from app.main import app
 from app.models import ChatRoomMember, User, UserPresence
+from app.sql_scripts import apply_init_schema
 from app.ws_manager import ws_manager
 
 
@@ -119,7 +120,7 @@ def reset_database():
     engine.dispose()
     if TEST_DB_PATH.exists():
         TEST_DB_PATH.unlink()
-    Base.metadata.create_all(bind=engine)
+    apply_init_schema(target_engine=engine)
     yield
     ws_manager.active_connections.clear()
     engine.dispose()
