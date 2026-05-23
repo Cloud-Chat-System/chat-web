@@ -1,4 +1,6 @@
 .env
+kafka/.env
+grafana/.env
 
 __pycache__/
 *.pyc

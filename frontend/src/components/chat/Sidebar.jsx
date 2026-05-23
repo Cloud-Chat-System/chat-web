@@ -67,7 +67,7 @@ export default function Sidebar({ onSelectChat }) {
             <FiSearch className={styles.searchIcon} />
             <input
               className={styles.searchInput}
-              placeholder="搜尋 Messenger Sidebar.jsx"
+              placeholder="搜尋"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               id="search-input"

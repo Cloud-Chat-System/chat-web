@@ -8,7 +8,6 @@ import {
   validatePasswordMatch,
 } from '../utils/validators'
 import { FiEye, FiEyeOff, FiMessageCircle, FiCheck, FiX } from 'react-icons/fi'
-import { FcGoogle } from 'react-icons/fc'
 import styles from '../styles/auth.module.css'
 
 export default function RegisterPage() {
@@ -19,7 +18,7 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false)
   const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
-  const { register, loginWithGoogle, isLoading, error, clearError } = useAuthStore()
+  const { register, isLoading, error, clearError } = useAuthStore()
 
   const isValid =
     validateName(name) &&
@@ -35,12 +34,6 @@ export default function RegisterPage() {
       setSuccess(true)
       setTimeout(() => navigate('/login'), 1500)
     } catch { /* error is set in store */ }
-  }
-
-  const handleGoogle = async () => {
-    clearError()
-    await loginWithGoogle()
-    navigate('/chat')
   }
 
   const ValidationIcon = ({ valid, show }) => {
@@ -110,7 +103,7 @@ export default function RegisterPage() {
                 data-testid="register-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
-                placeholder="至少 6tower 個字元"
+                placeholder="至少 6 個字元"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
@@ -135,7 +128,7 @@ export default function RegisterPage() {
                 data-testid="register-confirm-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
-                placeholder="再次輸入密碼RegisterPage.jsx"
+                placeholder="再次輸入密碼"
                 value={confirmPw}
                 onChange={(e) => setConfirmPw(e.target.value)}
                 autoComplete="new-password"
@@ -163,13 +156,6 @@ export default function RegisterPage() {
             ) : '建立帳號'}
           </button>
         </form>
-
-        <div className={styles.divider}>或</div>
-
-        <button className={styles.googleBtn} onClick={handleGoogle} disabled={isLoading}>
-          <FcGoogle size={20} />
-          使用 Google 帳號快速註冊
-        </button>
 
         <p className={styles.switchLink}>
           已有帳號？<Link to="/login">立即登入</Link>

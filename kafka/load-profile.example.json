@@ -1,0 +1,12 @@
+{
+  "scenarioName": "steady-state-throughput-and-online-users",
+  "targetMessageRatePerSecond": 1000,
+  "testDurationSeconds": 900,
+  "targetConcurrentOnlineUsers": 100000,
+  "topic": "chat.events",
+  "partitions": 12,
+  "notes": [
+    "Use this file as the single source of truth for test targets.",
+    "The Kafka owner can extend this with batch size, linger ms, acks, and compression."
+  ]
+}

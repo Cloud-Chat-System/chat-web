@@ -24,12 +24,6 @@ class AuthResponse(BaseModel):
     user: "UserOut"
 
 
-class GoogleLoginRequest(BaseModel):
-    """Simulated Google login — in production, this would be an OAuth code exchange."""
-    email: EmailStr
-    name: str
-
-
 # ── User ──────────────────────────────────────────────
 
 class UserOut(BaseModel):

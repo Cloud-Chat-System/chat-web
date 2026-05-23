@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import { validateEmail, validatePassword } from '../utils/validators'
 import { FiEye, FiEyeOff, FiMessageCircle } from 'react-icons/fi'
-import { FcGoogle } from 'react-icons/fc'
 import styles from '../styles/auth.module.css'
 
 export default function LoginPage() {
@@ -11,7 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [showPw, setShowPw] = useState(false)
   const navigate = useNavigate()
-  const { login, loginWithGoogle, isLoading, error, clearError } = useAuthStore()
+  const { login, isLoading, error, clearError } = useAuthStore()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -20,12 +19,6 @@ export default function LoginPage() {
       await login(email, password)
       navigate('/chat')
     } catch { /* error is set in store */ }
-  }
-
-  const handleGoogle = async () => {
-    clearError()
-    await loginWithGoogle()
-    navigate('/chat')
   }
 
   return (
@@ -90,7 +83,6 @@ export default function LoginPage() {
             <label className={styles.checkboxLabel}>
               <input type="checkbox" /> 記住我
             </label>
-            <a href="#" className={styles.forgotLink}>忘記密碼？</a>
           </div>
 
           <button
@@ -107,13 +99,6 @@ export default function LoginPage() {
             ) : '登入'}
           </button>
         </form>
-
-        <div className={styles.divider}>或</div>
-
-        <button className={styles.googleBtn} onClick={handleGoogle} disabled={isLoading}>
-          <FcGoogle size={20} />
-          使用 Google 帳號登入
-        </button>
 
         <p className={styles.switchLink}>
           還沒有帳號？<Link to="/register">立即註冊</Link>

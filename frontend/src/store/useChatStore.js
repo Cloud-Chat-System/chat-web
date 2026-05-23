@@ -1,9 +1,71 @@
 import { create } from 'zustand'
 import api from '../utils/api'
+import { WS_URL } from '../utils/env'
 import { useAuthStore } from './useAuthStore'
 
 let ws = null;
 let reconnectTimer = null;
+let pingTimer = null;
+
+function mapRoom(room) {
+  return {
+    id: room.id,
+    name: room.name,
+    isGroup: room.room_type === 'group',
+    members: room.members.map(m => m.id),
+    lastMessage: room.last_message,
+    lastMessageTime: room.last_message_at,
+    createdAt: room.created_at,
+    unreadCount: room.unread_count,
+    membersList: room.members
+  }
+}
+
+function mapMessage(message) {
+  return {
+    id: message.id,
+    chatId: message.room_id,
+    senderId: message.sender_id,
+    content: message.content,
+    timestamp: message.created_at,
+    senderName: message.sender_name
+  }
+}
+
+function sortRooms(rooms) {
+  return [...rooms].sort(
+    (a, b) => new Date(b.lastMessageTime || b.createdAt) - new Date(a.lastMessageTime || a.createdAt)
+  )
+}
+
+function mergeMessages(existingMessages = [], incomingMessages = []) {
+  const byId = new Map()
+  ;[...existingMessages, ...incomingMessages].forEach((message) => {
+    if (message?.id != null) byId.set(message.id, message)
+  })
+  return [...byId.values()].sort((a, b) => {
+    const timeDiff = new Date(a.timestamp) - new Date(b.timestamp)
+    return timeDiff || a.id - b.id
+  })
+}
+
+function upsertRoom(rooms, room) {
+  const existingIndex = rooms.findIndex((r) => r.id === room.id)
+  if (existingIndex === -1) {
+    return sortRooms([...rooms, room])
+  }
+
+  const nextRooms = [...rooms]
+  nextRooms[existingIndex] = { ...nextRooms[existingIndex], ...room }
+  return sortRooms(nextRooms)
+}
+
+function clearPingTimer() {
+  if (pingTimer) {
+    clearInterval(pingTimer)
+    pingTimer = null
+  }
+}
 
 export const useChatStore = create((set, get) => ({
   chatRooms: [],
@@ -14,25 +76,69 @@ export const useChatStore = create((set, get) => ({
   onlineUsers: new Set(),
   isLoading: false,
 
+  upsertChatRoom: (room) => {
+    const mappedRoom = mapRoom(room)
+    set((state) => ({
+      chatRooms: upsertRoom(state.chatRooms, mappedRoom),
+    }))
+  },
+
+  upsertMessage: (message, options = {}) => {
+    const mappedMessage = mapMessage(message)
+    set((state) => {
+      const chatId = mappedMessage.chatId
+      const previousMessages = state.messages[chatId] || []
+      const alreadyExists = previousMessages.some((msg) => msg.id === mappedMessage.id)
+      const nextMessages = mergeMessages(previousMessages, [mappedMessage])
+      const currentUserId = useAuthStore.getState().user?.id
+
+      const nextRooms = state.chatRooms.map((room) => {
+        if (room.id !== chatId) return room
+
+        const shouldIncrementUnread =
+          !alreadyExists &&
+          !options.fromSelf &&
+          state.activeChatId !== chatId &&
+          mappedMessage.senderId !== currentUserId
+
+        return {
+          ...room,
+          lastMessage: mappedMessage.content,
+          lastMessageTime: mappedMessage.timestamp,
+          unreadCount: shouldIncrementUnread ? room.unreadCount + 1 : room.unreadCount,
+        }
+      })
+
+      return {
+        messages: { ...state.messages, [chatId]: nextMessages },
+        chatRooms: sortRooms(nextRooms),
+      }
+    })
+  },
+
   initWebSocket: () => {
     const token = localStorage.getItem('token');
     if (!token) return;
     
     if (ws) {
+      ws.onclose = null;
       ws.close();
     }
+    clearPingTimer();
 
-    const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-    const wsUrl =
-      import.meta.env.VITE_WS_URL ||
-      apiBaseUrl.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws';
-    ws = new WebSocket(wsUrl);
+    ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
       ws.send(JSON.stringify({ token }));
+      get().fetchChatRooms();
+      const activeChatId = get().activeChatId;
+      if (activeChatId) {
+        get().fetchMessages(activeChatId);
+      }
       
       // Ping periodically to keep alive
-      setInterval(() => {
+      clearPingTimer();
+      pingTimer = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({ type: 'ping' }));
         }
@@ -43,41 +149,9 @@ export const useChatStore = create((set, get) => ({
       try {
         const data = JSON.parse(event.data);
         if (data.type === 'new_message') {
-          const msg = data.data;
-          
-          set((state) => {
-            const chatId = msg.room_id;
-            const updatedMessages = {
-              ...state.messages,
-              [chatId]: [...(state.messages[chatId] || []), {
-                id: msg.id,
-                chatId: msg.room_id,
-                senderId: msg.sender_id,
-                content: msg.content,
-                timestamp: msg.created_at,
-                senderName: msg.sender_name
-              }],
-            }
-            
-            const updatedRooms = state.chatRooms.map((room) =>
-              room.id === chatId
-                ? {
-                    ...room,
-                    lastMessage: msg.content,
-                    lastMessageTime: msg.created_at,
-                    unreadCount:
-                      state.activeChatId !== chatId && msg.sender_id !== useAuthStore.getState().user?.id
-                        ? room.unreadCount + 1
-                        : room.unreadCount,
-                  }
-                : room
-            )
-
-            // Re-sort rooms
-            updatedRooms.sort((a, b) => new Date(b.lastMessageTime || b.createdAt) - new Date(a.lastMessageTime || a.createdAt))
-            
-            return { messages: updatedMessages, chatRooms: updatedRooms }
-          });
+          get().upsertMessage(data.data);
+        } else if (data.type === 'chatroom_created') {
+          get().upsertChatRoom(data.data);
         } else if (data.type === 'presence') {
           set((state) => {
             const newOnline = new Set(state.onlineUsers);
@@ -96,6 +170,7 @@ export const useChatStore = create((set, get) => ({
 
     ws.onclose = () => {
       // Reconnect logic
+      clearPingTimer();
       clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(() => {
         if (useAuthStore.getState().user) {
@@ -109,18 +184,8 @@ export const useChatStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await api.get('/chatrooms');
-      const rooms = res.data.map(r => ({
-        id: r.id,
-        name: r.name,
-        isGroup: r.room_type === 'group',
-        members: r.members.map(m => m.id),
-        lastMessage: r.last_message,
-        lastMessageTime: r.last_message_at,
-        createdAt: r.created_at,
-        unreadCount: r.unread_count,
-        membersList: r.members
-      }));
-      set({ chatRooms: rooms, isLoading: false });
+      const rooms = res.data.map(mapRoom);
+      set({ chatRooms: sortRooms(rooms), isLoading: false });
     } catch (error) {
       console.error("Fetch chatrooms failed", error);
       set({ isLoading: false });
@@ -130,18 +195,14 @@ export const useChatStore = create((set, get) => ({
   fetchMessages: async (chatId) => {
     try {
       const res = await api.get(`/chatrooms/${chatId}/messages?limit=200`);
-      const msgs = res.data.messages.map(m => ({
-        id: m.id,
-        chatId: m.room_id,
-        senderId: m.sender_id,
-        content: m.content,
-        timestamp: m.created_at,
-        senderName: m.sender_name
-      }));
+      const msgs = res.data.messages.map(mapMessage);
       
-      set((state) => ({
-        messages: { ...state.messages, [chatId]: msgs }
-      }));
+      set((state) => {
+        const mergedMessages = mergeMessages(state.messages[chatId] || [], msgs)
+        return {
+          messages: { ...state.messages, [chatId]: mergedMessages }
+        }
+      });
     } catch (error) {
       console.error("Fetch messages failed", error);
     }
@@ -194,7 +255,8 @@ export const useChatStore = create((set, get) => ({
 
   sendMessage: async (chatId, content) => {
     try {
-      await api.post(`/chatrooms/${chatId}/messages`, { content });
+      const res = await api.post(`/chatrooms/${chatId}/messages`, { content });
+      get().upsertMessage(res.data, { fromSelf: true });
     } catch (error) {
       console.error("Send message failed", error);
     }
@@ -208,7 +270,7 @@ export const useChatStore = create((set, get) => ({
         name: ''
       });
       
-      await get().fetchChatRooms();
+      get().upsertChatRoom(res.data);
       set({ activeChatId: res.data.id });
       get().fetchMessages(res.data.id);
       return res.data;
@@ -226,7 +288,7 @@ export const useChatStore = create((set, get) => ({
         name: name
       });
       
-      await get().fetchChatRooms();
+      get().upsertChatRoom(res.data);
       set({ activeChatId: res.data.id });
       get().fetchMessages(res.data.id);
       return res.data;
@@ -251,9 +313,11 @@ export const useChatStore = create((set, get) => ({
   
   disconnectWebSocket: () => {
     if (ws) {
+      ws.onclose = null;
       ws.close();
       ws = null;
     }
     clearTimeout(reconnectTimer);
+    clearPingTimer();
   }
 }))
