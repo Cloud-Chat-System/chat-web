@@ -65,6 +65,7 @@ export default function RegisterPage() {
             <div className={styles.inputWrapper}>
               <input
                 id="reg-name"
+                data-testid="register-name"
                 className={styles.formInput}
                 type="text"
                 placeholder="請輸入名稱"
@@ -81,6 +82,7 @@ export default function RegisterPage() {
             <div className={styles.inputWrapper}>
               <input
                 id="reg-email"
+                data-testid="register-email"
                 className={styles.formInput}
                 type="email"
                 placeholder="name@tsmc.com"
@@ -98,6 +100,7 @@ export default function RegisterPage() {
             <div className={styles.inputWrapper}>
               <input
                 id="reg-password"
+                data-testid="register-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
                 placeholder="至少 6 個字元"
@@ -122,6 +125,7 @@ export default function RegisterPage() {
             <div className={styles.inputWrapper}>
               <input
                 id="reg-confirm"
+                data-testid="register-confirm-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
                 placeholder="再次輸入密碼"
@@ -139,6 +143,7 @@ export default function RegisterPage() {
 
           <button
             type="submit"
+            data-testid="register-submit"
             className={styles.submitBtn}
             disabled={isLoading || !isValid}
             style={{ marginTop: 8 }}

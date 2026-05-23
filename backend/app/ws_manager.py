@@ -1,8 +1,8 @@
 """WebSocket connection manager for real-time messaging."""
 
 from typing import Dict, Set
+
 from fastapi import WebSocket
-import json
 
 
 class ConnectionManager:

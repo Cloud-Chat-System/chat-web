@@ -1,5 +1,8 @@
 """FastAPI application entry point with WebSocket support."""
 
+from contextlib import asynccontextmanager
+import os
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,10 +11,18 @@ from sqlalchemy.orm import Session
 
 from .auth import decode_token
 from .config import BACKEND_CONTAINER_PORT, BACKEND_HOST, CORS_ALLOWED_ORIGINS, FRONTEND_URL
-from .database import engine, get_db
+from .database import Base, engine, get_db
 from .models import ChatRoomMember, UserPresence
 from .routers import auth_router, chatroom_router, user_router
 from .ws_manager import ws_manager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create all tables on startup."""
+    Base.metadata.create_all(bind=engine)
+    yield
+
 
 app = FastAPI(
     title="TSMC Messenger API",

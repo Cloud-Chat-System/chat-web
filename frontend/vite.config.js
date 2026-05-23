@@ -20,5 +20,11 @@ export default defineConfig(({ mode }) => {
       host: env.FRONTEND_HOST,
       port: Number(env.FRONTEND_CONTAINER_PORT),
     },
+    test: {
+      environment: 'jsdom',
+      globals: false,
+      setupFiles: './src/test/setup.js',
+      css: true,
+    },
   }
 })

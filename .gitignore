@@ -5,10 +5,15 @@ grafana/.env
 __pycache__/
 *.pyc
 .venv/
+.ruff_cache/
 
 node_modules/
+.husky/_/
 dist/
 build/
+coverage/
+playwright-report/
+test-results/
 
 postgres_data/
 .DS_Store

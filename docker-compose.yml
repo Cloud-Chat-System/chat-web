@@ -50,10 +50,12 @@ services:
       - ./database/init.sql:/docker-entrypoint-initdb.d/01_init.sql
       - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-chat_user} -d $${POSTGRES_DB:-chat_app}"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 12
+      start_period: 5s
+
 volumes:
   postgres_data:
   frontend_node_modules:

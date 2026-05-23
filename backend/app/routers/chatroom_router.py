@@ -4,13 +4,20 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.orm import Session
 
-from ..database import get_db
-from ..models import ChatRoom, ChatRoomMember, Message, User, UserPresence
-from ..schemas import ChatRoomCreate, ChatRoomOut, MessageCreate, MessageOut, MessageListResponse, UserOut
 from ..auth import get_current_user
+from ..database import get_db
+from ..models import ChatRoom, ChatRoomMember, Message, User
+from ..schemas import (
+    ChatRoomCreate,
+    ChatRoomOut,
+    MessageCreate,
+    MessageListResponse,
+    MessageOut,
+    UserOut,
+)
 from ..ws_manager import ws_manager
 
 router = APIRouter(prefix="/chatrooms", tags=["chatrooms"])

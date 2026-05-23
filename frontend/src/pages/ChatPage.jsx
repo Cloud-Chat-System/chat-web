@@ -6,7 +6,7 @@ import chatStyles from '../styles/chat.module.css'
 
 export default function ChatPage() {
   const [showSidebar, setShowSidebar] = useState(true)
-  const { activeChatId, setActiveChatId, fetchChatRooms, fetchOnlineUsers, initWebSocket, disconnectWebSocket } = useChatStore()
+  const { setActiveChatId, fetchChatRooms, fetchOnlineUsers, initWebSocket, disconnectWebSocket } = useChatStore()
 
   useEffect(() => {
     fetchChatRooms()

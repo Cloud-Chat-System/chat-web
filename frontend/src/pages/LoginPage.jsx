@@ -42,6 +42,7 @@ export default function LoginPage() {
             <label className={styles.formLabel} htmlFor="login-email">Email</label>
             <input
               id="login-email"
+              data-testid="login-email"
               className={styles.formInput}
               type="email"
               placeholder="name@tsmc.com"
@@ -57,6 +58,7 @@ export default function LoginPage() {
             <div className={styles.inputWrapper}>
               <input
                 id="login-password"
+                data-testid="login-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
                 placeholder="請輸入密碼"
@@ -85,6 +87,7 @@ export default function LoginPage() {
 
           <button
             type="submit"
+            data-testid="login-submit"
             className={styles.submitBtn}
             disabled={isLoading || !validateEmail(email) || !validatePassword(password)}
           >

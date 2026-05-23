@@ -1,0 +1,30 @@
+{
+  "name": "chat-web-tooling",
+  "private": true,
+  "scripts": {
+    "prepare": "husky",
+    "lint-staged": "lint-staged --relative",
+    "lint:backend": "docker compose run --rm -T backend python -m ruff check app tests",
+    "lint:frontend": "npm --prefix frontend run lint",
+    "test:backend": "docker compose run --rm -T backend pytest -v",
+    "test:backend:unit": "docker compose run --rm -T backend pytest -v -m unit",
+    "test:backend:smoke": "docker compose run --rm -T backend pytest -v -m smoke",
+    "test:frontend": "npm --prefix frontend run test",
+    "test:e2e": "playwright test -c e2e/playwright.config.js",
+    "test:e2e:ui": "playwright test -c e2e/playwright.config.js --ui",
+    "test:pressure": "docker compose exec -T backend python -m pytest --color=yes -s tests/pressure -m pressure --pressure-base-url http://127.0.0.1:8000",
+    "test:pressure:light": "npm run test:pressure -- --pressure-scenario light",
+    "test:pressure:mid": "npm run test:pressure -- --pressure-scenario mid",
+    "test:pressure:heavy": "npm run test:pressure -- --pressure-scenario heavy",
+    "build:frontend": "npm --prefix frontend run build"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2"
+  },
+  "lint-staged": {
+    "backend/**/*.py": "scripts/lint-staged-backend.sh",
+    "frontend/**/*.{js,jsx}": "scripts/lint-staged-frontend.sh"
+  }
+}
