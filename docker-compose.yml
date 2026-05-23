@@ -25,6 +25,7 @@ services:
       - "${BACKEND_PORT}:${BACKEND_CONTAINER_PORT}"
     volumes:
       - ./backend:/app
+      - ./database:/database:ro
     env_file:
       - .env
     command: sh -c "uvicorn app.main:app --host ${BACKEND_HOST} --port ${BACKEND_CONTAINER_PORT} --reload"

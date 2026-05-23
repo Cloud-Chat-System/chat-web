@@ -1,7 +1,6 @@
 """FastAPI application entry point with WebSocket support."""
 
 from contextlib import asynccontextmanager
-import os
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware

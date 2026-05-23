@@ -5,10 +5,18 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import User, UserPresence
-from ..schemas import RegisterRequest, LoginRequest, AuthResponse, UserOut
+from ..schemas import RegisterRequest, LoginRequest, GoogleLoginRequest, AuthResponse, UserOut
 from ..auth import hash_password, verify_password, create_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+def _ensure_presence(db: Session, user: User, status_value: str) -> None:
+    presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
+    if presence:
+        presence.status = status_value
+        return
+    db.add(UserPresence(user_id=user.id, status=status_value))
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -33,9 +41,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # Create presence record
-    presence = UserPresence(user_id=user.id, status="offline")
-    db.add(presence)
+    _ensure_presence(db, user, "offline")
     db.commit()
 
     return {"message": "註冊成功", "user_id": user.id}
@@ -53,13 +59,48 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_token(user.id, user.email, user.token_version)
 
-    # Update presence to online
-    presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
-    if presence:
-        presence.status = "online"
+    _ensure_presence(db, user, "online")
     db.commit()
     db.refresh(user)
 
+    return AuthResponse(
+        token=token,
+        user=UserOut.model_validate(user),
+    )
+
+
+@router.post("/google", response_model=AuthResponse)
+def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
+    """Create or reuse a Google-backed account and return a JWT token."""
+    user = db.query(User).filter(User.email == req.email).first()
+    if user is None:
+        username_base = req.email.split("@", 1)[0]
+        username = username_base
+        suffix = 1
+        while db.query(User).filter(User.username == username).first():
+            suffix += 1
+            username = f"{username_base}{suffix}"
+
+        user = User(
+            username=username,
+            email=req.email,
+            password_hash=None,
+            display_name=req.name,
+            auth_provider="google",
+            provider_user_id=req.email,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    elif user.auth_provider != "google":
+        user.auth_provider = "google"
+        user.provider_user_id = user.provider_user_id or req.email
+
+    _ensure_presence(db, user, "online")
+    db.commit()
+    db.refresh(user)
+
+    token = create_token(user.id, user.email, user.token_version)
     return AuthResponse(
         token=token,
         user=UserOut.model_validate(user),
@@ -75,9 +116,7 @@ def get_me(current_user: User = Depends(get_current_user)):
 @router.post("/logout")
 def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Logout: set user presence to offline."""
-    presence = db.query(UserPresence).filter(UserPresence.user_id == current_user.id).first()
-    if presence:
-        presence.status = "offline"
+    _ensure_presence(db, current_user, "offline")
     current_user.token_version += 1
     db.commit()
     return {"message": "已登出"}

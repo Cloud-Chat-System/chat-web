@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 import re
 
@@ -7,14 +8,29 @@ from .database import engine
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATABASE_DIR = PROJECT_ROOT / "database"
+
+
+def _database_dir_candidates() -> list[Path]:
+    configured_dir = os.getenv("DATABASE_SCRIPTS_DIR")
+    candidates = []
+    if configured_dir:
+        candidates.append(Path(configured_dir))
+
+    candidates.append(Path("/database"))
+    for parent in Path(__file__).resolve().parents:
+        candidates.append(parent / "database")
+    return candidates
 
 
 def get_sql_script_path(filename: str) -> Path:
-    path = DATABASE_DIR / filename
-    if not path.exists():
-        raise FileNotFoundError(f"SQL script not found: {path}")
-    return path
+    checked_paths = []
+    for database_dir in _database_dir_candidates():
+        path = database_dir / filename
+        checked_paths.append(path)
+        if path.exists():
+            return path
+    checked = ", ".join(str(path) for path in checked_paths)
+    raise FileNotFoundError(f"SQL script not found: {filename}; checked: {checked}")
 
 
 def read_sql_script(filename: str) -> str:
