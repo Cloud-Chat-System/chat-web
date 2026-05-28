@@ -49,3 +49,14 @@ def test_health_endpoint_stays_200_even_if_database_checker_fails(client, monkey
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
+
+
+def test_metrics_endpoint_exposes_prometheus_format(client):
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/plain")
+    assert "chat_web_http_requests_total" in response.text
+    assert "chat_web_http_request_duration_seconds_bucket" in response.text
