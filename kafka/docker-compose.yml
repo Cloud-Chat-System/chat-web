@@ -1,0 +1,34 @@
+services:
+  kafka:
+    image: bitnami/kafka:3.7
+    container_name: chat_kafka
+    ports:
+      - "${KAFKA_EXTERNAL_PORT}:9094"
+    environment:
+      KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_CFG_NODE_ID: ${KAFKA_BROKER_ID}
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:${KAFKA_INTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},EXTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:${KAFKA_INTERNAL_PORT},EXTERNAL://${KAFKA_ADVERTISED_HOST}:${KAFKA_EXTERNAL_PORT}
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: ${KAFKA_BROKER_ID}@kafka:${KAFKA_CONTROLLER_PORT}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka_data:/bitnami/kafka
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: chat_kafka_ui
+    depends_on:
+      - kafka
+    ports:
+      - "${KAFKA_UI_PORT}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: chat-web
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:${KAFKA_INTERNAL_PORT}
+      KAFKA_CLUSTERS_0_READONLY: "false"
+
+volumes:
+  kafka_data:

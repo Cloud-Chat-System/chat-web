@@ -1,0 +1,103 @@
+/* ============================================
+   Common Components Styles
+   ============================================ */
+
+/* Avatar */
+.avatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  color: #fff;
+  flex-shrink: 0;
+  overflow: hidden;
+  user-select: none;
+}
+
+.avatarSm {
+  width: var(--avatar-sm);
+  height: var(--avatar-sm);
+  font-size: var(--font-sm);
+}
+
+.avatarMd {
+  width: var(--avatar-md);
+  height: var(--avatar-md);
+  font-size: var(--font-md);
+}
+
+.avatarLg {
+  width: var(--avatar-lg);
+  height: var(--avatar-lg);
+  font-size: var(--font-lg);
+}
+
+.avatarImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: var(--radius-full);
+}
+
+/* Avatar gradient backgrounds based on name hash */
+.avatarBg0 { background: linear-gradient(135deg, #667eea, #764ba2); }
+.avatarBg1 { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.avatarBg2 { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.avatarBg3 { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.avatarBg4 { background: linear-gradient(135deg, #fa709a, #fee140); }
+.avatarBg5 { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
+.avatarBg6 { background: linear-gradient(135deg, #fccb90, #d57eeb); }
+.avatarBg7 { background: linear-gradient(135deg, #e0c3fc, #8ec5fc); }
+
+/* Online Dot */
+.onlineDot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--online-color);
+  border: 2.5px solid var(--bg-sidebar);
+  z-index: 2;
+}
+
+.onlineDotSmall {
+  width: 10px;
+  height: 10px;
+  border-width: 2px;
+}
+
+.offlineDot {
+  background: var(--offline-color);
+}
+
+/* Group Avatar */
+.groupAvatar {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.groupAvatarGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.groupAvatarItem {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+}

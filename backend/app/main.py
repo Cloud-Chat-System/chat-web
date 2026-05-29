@@ -1,249 +1,162 @@
-import os
-import psycopg2
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+"""FastAPI application entry point with WebSocket support."""
 
-app = FastAPI()
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from .auth import decode_token
+from .config import BACKEND_CONTAINER_PORT, BACKEND_HOST, CORS_ALLOWED_ORIGINS, FRONTEND_URL
+from .database import Base, engine, get_db
+from .models import ChatRoomMember, UserPresence
+from .routers import auth_router, chatroom_router, user_router
+from .ws_manager import ws_manager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Create all tables on startup."""
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(
+    title="TSMC Messenger API",
+    description="TSMC Messenger backend API",
+    version="1.0.0",
+)
+
+allowed_origins = list(CORS_ALLOWED_ORIGINS)
+if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
+    allowed_origins.append(FRONTEND_URL)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-
-def get_connection():
-    return psycopg2.connect(DATABASE_URL)
+app.include_router(auth_router.router)
+app.include_router(chatroom_router.router)
+app.include_router(user_router.router)
 
 
 @app.get("/health")
-def health():
-    return {
-        "status": "ok",
-        "service": "backend"
+def health_check():
+    """Health check endpoint."""
+    return {"status": "ok", "service": "TSMC Messenger API"}
+
+
+def _check_database_health() -> tuple[bool, str]:
+    """Verify that the database is reachable."""
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+        return True, "ok"
+    except Exception:
+        return False, "unavailable"
+
+
+@app.get("/api/health")
+def api_health_check():
+    """Readiness check endpoint with database status."""
+    db_ok, db_status = _check_database_health()
+    payload = {
+        "service": "TSMC Messenger API",
+        "status": "ok" if db_ok else "degraded",
+        "database": db_status,
     }
+    if not db_ok:
+        return JSONResponse(status_code=503, content=payload)
+    return payload
 
 
-@app.get("/db-health")
-def db_health():
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """
+    WebSocket endpoint for real-time messaging.
+    Client must send a JWT token as the first message after connecting.
+    """
+    user_id = None
+    db: Session = next(get_db())
     try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("SELECT 1;")
-        result = cur.fetchone()
-        cur.close()
-        conn.close()
+        await websocket.accept()
 
-        return {
-            "status": "ok",
-            "database": "connected",
-            "result": result[0]
-        }
+        auth_data = await websocket.receive_json()
+        token = auth_data.get("token", "")
 
-    except Exception as e:
-        return {
-            "status": "error",
-            "database": "disconnected",
-            "error": str(e)
-        }
+        try:
+            payload = decode_token(token)
+            user_id = int(payload.get("sub", 0))
+        except Exception:
+            await websocket.send_json({"type": "error", "message": "Unauthorized"})
+            await websocket.close()
+            return
 
+        if user_id not in ws_manager.active_connections:
+            ws_manager.active_connections[user_id] = set()
+        ws_manager.active_connections[user_id].add(websocket)
 
-@app.get("/users")
-def get_users():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT id, username, email, display_name, auth_provider, is_active
-            FROM users
-            ORDER BY id;
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+        presence = db.query(UserPresence).filter(UserPresence.user_id == user_id).first()
+        if presence:
+            presence.status = "online"
+            db.commit()
 
-        return [
-            {
-                "id": row[0],
-                "username": row[1],
-                "email": row[2],
-                "display_name": row[3],
-                "auth_provider": row[4],
-                "is_active": row[5]
-            }
-            for row in rows
-        ]
+        contact_ids = _get_contact_ids(user_id, db)
+        await ws_manager.broadcast_presence(user_id, "online", contact_ids)
+        await websocket.send_json({"type": "connected", "user_id": user_id})
 
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        while True:
+            data = await websocket.receive_json()
+            if data.get("type", "") == "ping":
+                await websocket.send_json({"type": "pong"})
 
+    except WebSocketDisconnect:
+        pass
+    except Exception:
+        pass
+    finally:
+        if user_id:
+            ws_manager.disconnect(websocket, user_id)
 
-@app.get("/chat-rooms")
-def get_chat_rooms():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT
-                cr.id,
-                cr.room_type,
-                cr.name,
-                cr.created_by,
-                cr.last_message_at,
-                cr.is_active
-            FROM chat_rooms cr
-            ORDER BY cr.last_message_at DESC NULLS LAST, cr.id DESC;
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+            if not ws_manager.is_online(user_id):
+                try:
+                    presence = db.query(UserPresence).filter(UserPresence.user_id == user_id).first()
+                    if presence:
+                        presence.status = "offline"
+                        db.commit()
 
-        return [
-            {
-                "id": row[0],
-                "room_type": row[1],
-                "name": row[2],
-                "created_by": row[3],
-                "last_message_at": row[4],
-                "is_active": row[5]
-            }
-            for row in rows
-        ]
+                    contact_ids = _get_contact_ids(user_id, db)
+                    await ws_manager.broadcast_presence(user_id, "offline", contact_ids)
+                except Exception:
+                    pass
 
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        db.close()
 
 
-@app.get("/chat-rooms/{chat_room_id}/messages")
-def get_messages(chat_room_id: int):
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT
-                m.id,
-                m.chat_room_id,
-                m.sender_id,
-                u.username,
-                m.content,
-                m.message_type,
-                m.created_at,
-                m.is_deleted
-            FROM messages m
-            JOIN users u ON u.id = m.sender_id
-            WHERE m.chat_room_id = %s
-            ORDER BY m.created_at ASC;
-        """, (chat_room_id,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+def _get_contact_ids(user_id: int, db: Session) -> list:
+    """Get all user IDs that share a chat room with the given user."""
+    room_ids = [
+        member.room_id
+        for member in db.query(ChatRoomMember).filter(ChatRoomMember.user_id == user_id).all()
+    ]
+    if not room_ids:
+        return []
 
-        return [
-            {
-                "id": row[0],
-                "chat_room_id": row[1],
-                "sender_id": row[2],
-                "sender_username": row[3],
-                "content": row[4],
-                "message_type": row[5],
-                "created_at": row[6],
-                "is_deleted": row[7]
-            }
-            for row in rows
-        ]
+    contact_ids = set()
+    for member in db.query(ChatRoomMember).filter(ChatRoomMember.room_id.in_(room_ids)).all():
+        if member.user_id != user_id:
+            contact_ids.add(member.user_id)
 
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+    return list(contact_ids)
 
 
-@app.get("/notifications/{user_id}")
-def get_notifications(user_id: int):
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT
-                n.id,
-                n.user_id,
-                n.chat_room_id,
-                n.message_id,
-                n.notification_type,
-                n.is_read,
-                n.created_at
-            FROM notifications n
-            WHERE n.user_id = %s
-            ORDER BY n.created_at DESC;
-        """, (user_id,))
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
+if __name__ == "__main__":
+    import uvicorn
 
-        return [
-            {
-                "id": row[0],
-                "user_id": row[1],
-                "chat_room_id": row[2],
-                "message_id": row[3],
-                "notification_type": row[4],
-                "is_read": row[5],
-                "created_at": row[6]
-            }
-            for row in rows
-        ]
-
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
-
-
-@app.get("/presence")
-def get_presence():
-    try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            SELECT
-                up.user_id,
-                u.username,
-                up.status,
-                up.last_seen_at,
-                up.updated_at
-            FROM user_presence up
-            JOIN users u ON u.id = up.user_id
-            ORDER BY up.user_id;
-        """)
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-
-        return [
-            {
-                "user_id": row[0],
-                "username": row[1],
-                "status": row[2],
-                "last_seen_at": row[3],
-                "updated_at": row[4]
-            }
-            for row in rows
-        ]
-
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+    uvicorn.run("app.main:app", host=BACKEND_HOST, port=BACKEND_CONTAINER_PORT, reload=True)
