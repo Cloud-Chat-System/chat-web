@@ -18,3 +18,9 @@ postgres_data/
 
 *_test.db
 *.db
+
+# Coverage reports
+.coverage
+coverage.xml
+htmlcov/
+frontend/coverage/
