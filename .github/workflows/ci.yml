@@ -30,8 +30,8 @@ jobs:
       - name: Run backend unit tests with coverage
         run: python -m pytest backend/tests -m unit --cov=./ --cov-report=xml
 
-      - name: Run backend smoke tests
-        run: python -m pytest backend/tests -m smoke
+      - name: Run backend smoke tests with coverage
+        run: python -m pytest backend/tests -m smoke --cov=./ --cov-append --cov-report=xml
       
       - name: Upload Backend Coverage to Codecov
         uses: codecov/codecov-action@v4
