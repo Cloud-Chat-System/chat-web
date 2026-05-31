@@ -100,8 +100,49 @@ const mockMessages = {
   ],
 }
 
+function redirectToLogin() {
+  useAuthStore.setState({ user: null })
+  globalThis.location.assign('/login')
+}
+
+function clearMockUnread(chatId) {
+  useChatStore.setState((current) => ({
+    chatRooms: current.chatRooms.map((room) =>
+      room.id === chatId ? { ...room, unreadCount: 0 } : room
+    ),
+  }))
+}
+
+function appendMockMessage(chatId, content) {
+  const message = {
+    id: Date.now(),
+    chatId,
+    senderId: mockUser.id,
+    senderName: mockUser.display_name,
+    content,
+    timestamp: new Date().toISOString(),
+  }
+
+  useChatStore.setState((current) => ({
+    messages: {
+      ...current.messages,
+      [chatId]: [...(current.messages[chatId] || []), message],
+    },
+    chatRooms: current.chatRooms.map((room) =>
+      room.id === chatId
+        ? { ...room, lastMessage: content, lastMessageTime: message.timestamp }
+        : room
+    ),
+  }))
+}
+
+function isWideViewport() {
+  return typeof globalThis.innerWidth === 'number' && globalThis.innerWidth >= 768
+}
+
 export default function DevChatPage() {
   const [showSidebar, setShowSidebar] = useState(true)
+  const [isWide, setIsWide] = useState(isWideViewport)
 
   useEffect(() => {
     useAuthStore.setState({
@@ -109,10 +150,7 @@ export default function DevChatPage() {
       isLoading: false,
       error: null,
       isInitialized: true,
-      logout: () => {
-        useAuthStore.setState({ user: null })
-        window.location.assign('/login')
-      },
+      logout: redirectToLogin,
     })
 
     useChatStore.setState((state) => ({
@@ -129,40 +167,19 @@ export default function DevChatPage() {
       fetchOnlineUsers: async () => {},
       initWebSocket: () => {},
       disconnectWebSocket: () => {},
-      markAsRead: async (chatId) => {
-        useChatStore.setState((current) => ({
-          chatRooms: current.chatRooms.map((room) =>
-            room.id === chatId ? { ...room, unreadCount: 0 } : room
-          ),
-        }))
-      },
-      sendMessage: async (chatId, content) => {
-        const message = {
-          id: Date.now(),
-          chatId,
-          senderId: mockUser.id,
-          senderName: mockUser.display_name,
-          content,
-          timestamp: new Date().toISOString(),
-        }
-
-        useChatStore.setState((current) => ({
-          messages: {
-            ...current.messages,
-            [chatId]: [...(current.messages[chatId] || []), message],
-          },
-          chatRooms: current.chatRooms.map((room) =>
-            room.id === chatId
-              ? { ...room, lastMessage: content, lastMessageTime: message.timestamp }
-              : room
-          ),
-        }))
-      },
+      markAsRead: clearMockUnread,
+      sendMessage: appendMockMessage,
     }))
   }, [])
 
+  useEffect(() => {
+    const handleResize = () => setIsWide(isWideViewport())
+    globalThis.addEventListener('resize', handleResize)
+    return () => globalThis.removeEventListener('resize', handleResize)
+  }, [])
+
   const handleSelectChat = () => {
-    if (window.innerWidth < 768) {
+    if (!isWide) {
       setShowSidebar(false)
     }
   }
@@ -174,8 +191,8 @@ export default function DevChatPage() {
 
   return (
     <div className={chatStyles.chatLayout}>
-      {(showSidebar || window.innerWidth >= 768) && <Sidebar onSelectChat={handleSelectChat} />}
-      {(!showSidebar || window.innerWidth >= 768) && <ChatWindow onBack={handleBack} />}
+      {(showSidebar || isWide) && <Sidebar onSelectChat={handleSelectChat} />}
+      {(!showSidebar || isWide) && <ChatWindow onBack={handleBack} />}
     </div>
   )
 }

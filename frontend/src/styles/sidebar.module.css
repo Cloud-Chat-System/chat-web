@@ -134,14 +134,19 @@
 
 /* Chat List Item */
 .chatItem {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
+  border: none;
   border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
   cursor: pointer;
   transition: all var(--transition-fast);
   position: relative;
+  text-align: left;
 }
 
 .chatItem:hover {

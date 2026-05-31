@@ -14,6 +14,8 @@ for file in "$@"; do
         backend/*.py)
             set -- "$@" "${file#backend/}"
             ;;
+        *)
+            ;;
     esac
 done
 

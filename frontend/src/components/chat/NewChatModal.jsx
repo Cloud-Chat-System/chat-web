@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { useChatStore } from '../../store/useChatStore'
 import api from '../../utils/api'
 import chatStyles from '../../styles/chat.module.css'
@@ -24,7 +25,7 @@ export default function NewChatModal({ onClose }) {
     const timer = setTimeout(async () => {
       setIsSearching(true)
       try {
-        const res = await api.get(`/users/search?q=${searchQuery}`)
+        const res = await api.get(`/users/search?q=${encodeURIComponent(searchQuery)}`)
         setSearchResults(res.data)
       } catch (err) {
         console.error("Search failed", err)
@@ -38,12 +39,10 @@ export default function NewChatModal({ onClose }) {
   const toggleUserSelection = (user) => {
     if (mode === 'single') {
       setSelectedUsers([user])
+    } else if (selectedUsers.some((selectedUser) => selectedUser.id === user.id)) {
+      setSelectedUsers(selectedUsers.filter((selectedUser) => selectedUser.id !== user.id))
     } else {
-      if (selectedUsers.find(u => u.id === user.id)) {
-        setSelectedUsers(selectedUsers.filter(u => u.id !== user.id))
-      } else {
-        setSelectedUsers([...selectedUsers, user])
-      }
+      setSelectedUsers([...selectedUsers, user])
     }
   }
 
@@ -75,12 +74,69 @@ export default function NewChatModal({ onClose }) {
     }
   }
 
-  const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose()
+  const renderSearchResults = () => {
+    if (isSearching) {
+      return (
+        <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          搜尋中...
+        </div>
+      )
+    }
+
+    if (searchResults.length > 0) {
+      return searchResults.map((u) => {
+        const isSelected = selectedUsers.some((su) => su.id === u.id)
+        return (
+          <button
+            type="button"
+            key={u.id}
+            data-testid="user-search-result"
+            onClick={() => toggleUserSelection(u)}
+            style={{
+              width: '100%',
+              padding: '12px',
+              border: 'none',
+              borderBottom: '1px solid var(--border-color)',
+              cursor: 'pointer',
+              background: isSelected ? 'var(--hover-bg)' : 'transparent',
+              color: 'inherit',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              textAlign: 'left',
+            }}
+          >
+            <span>
+              <span style={{ display: 'block', fontWeight: 500 }}>
+                {u.display_name || u.username}
+              </span>
+              <span style={{ display: 'block', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                {u.email}
+              </span>
+            </span>
+            {isSelected && <span style={{ color: 'var(--tsmc-blue)' }}>✓</span>}
+          </button>
+        )
+      })
+    }
+
+    if (searchQuery.trim()) {
+      return (
+        <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+          找不到使用者
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>
+        請輸入關鍵字搜尋
+      </div>
+    )
   }
 
   return (
-    <div className={chatStyles.modalBackdrop} onClick={handleBackdropClick} data-testid="new-chat-modal">
+    <div className={chatStyles.modalBackdrop} data-testid="new-chat-modal">
       <div className={chatStyles.modal}>
         <h2 className={chatStyles.modalTitle}>新增聊天室</h2>
         <p className={chatStyles.modalDesc}>
@@ -90,6 +146,7 @@ export default function NewChatModal({ onClose }) {
         {/* Mode Tabs */}
         <div className={chatStyles.modalTabs}>
           <button
+            type="button"
             className={`${chatStyles.modalTab} ${mode === 'single' ? chatStyles.modalTabActive : ''}`}
             onClick={() => { setMode('single'); setSelectedUsers([]); setError('') }}
             data-testid="direct-chat-tab"
@@ -97,6 +154,7 @@ export default function NewChatModal({ onClose }) {
             1 對 1 聊天
           </button>
           <button
+            type="button"
             className={`${chatStyles.modalTab} ${mode === 'group' ? chatStyles.modalTabActive : ''}`}
             onClick={() => { setMode('group'); setSelectedUsers([]); setError('') }}
             data-testid="group-chat-tab"
@@ -133,7 +191,14 @@ export default function NewChatModal({ onClose }) {
             {selectedUsers.map(u => (
               <div key={u.id} style={{ padding: '4px 8px', background: 'var(--tsmc-blue)', color: 'white', borderRadius: '16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 {u.display_name || u.username}
-                <button onClick={() => toggleUserSelection(u)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>×</button>
+                <button
+                  type="button"
+                  onClick={() => toggleUserSelection(u)}
+                  aria-label={`移除 ${u.display_name || u.username}`}
+                  style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}
+                >
+                  ×
+                </button>
               </div>
             ))}
           </div>
@@ -141,46 +206,18 @@ export default function NewChatModal({ onClose }) {
 
         {/* Search Results */}
         <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '8px', marginTop: '12px' }}>
-          {isSearching ? (
-            <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>搜尋中...</div>
-          ) : searchResults.length > 0 ? (
-            searchResults.map(u => {
-              const isSelected = selectedUsers.some(su => su.id === u.id)
-              return (
-                <div 
-                  key={u.id} 
-                  data-testid="user-search-result"
-                  onClick={() => toggleUserSelection(u)}
-                  style={{ 
-                    padding: '12px', 
-                    borderBottom: '1px solid var(--border-color)',
-                    cursor: 'pointer',
-                    background: isSelected ? 'var(--hover-bg)' : 'transparent',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 500 }}>{u.display_name || u.username}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{u.email}</div>
-                  </div>
-                  {isSelected && <span style={{ color: 'var(--tsmc-blue)' }}>✓</span>}
-                </div>
-              )
-            })
-          ) : searchQuery.trim() ? (
-            <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>找不到使用者</div>
-          ) : (
-            <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)' }}>請輸入關鍵字搜尋</div>
-          )}
+          {renderSearchResults()}
         </div>
 
         <div className={chatStyles.modalBtnRow} style={{ marginTop: '20px' }}>
-          <button className={chatStyles.modalBtnCancel} onClick={onClose}>取消</button>
-          <button className={chatStyles.modalBtnConfirm} onClick={handleCreate} disabled={selectedUsers.length === 0}>建立</button>
+          <button type="button" className={chatStyles.modalBtnCancel} onClick={onClose}>取消</button>
+          <button type="button" className={chatStyles.modalBtnConfirm} onClick={handleCreate} disabled={selectedUsers.length === 0}>建立</button>
         </div>
       </div>
     </div>
   )
+}
+
+NewChatModal.propTypes = {
+  onClose: PropTypes.func.isRequired,
 }

@@ -67,15 +67,14 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
               />
-              <span
+              <button
+                type="button"
                 className={styles.inputIcon}
                 onClick={() => setShowPw(!showPw)}
-                role="button"
-                tabIndex={0}
                 aria-label={showPw ? '隱藏密碼' : '顯示密碼'}
               >
                 {showPw ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-              </span>
+              </button>
             </div>
           </div>
 
@@ -94,7 +93,7 @@ export default function LoginPage() {
             {isLoading ? (
               <span className={styles.btnLoading}>
                 <span className={styles.spinner} />
-                登入中...
+                <span>登入中...</span>
               </span>
             ) : '登入'}
           </button>

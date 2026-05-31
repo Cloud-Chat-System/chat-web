@@ -1,5 +1,7 @@
 """Authentication routes: register, login, and current user."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -10,6 +12,12 @@ from ..auth import hash_password, verify_password, create_token, get_current_use
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
+
+BAD_REQUEST_RESPONSE = {400: {"description": "Bad request"}}
+UNAUTHORIZED_RESPONSE = {401: {"description": "Unauthorized"}}
+
 
 def _ensure_presence(db: Session, user: User, status_value: str) -> None:
     presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
@@ -19,8 +27,12 @@ def _ensure_presence(db: Session, user: User, status_value: str) -> None:
     db.add(UserPresence(user_id=user.id, status=status_value))
 
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    responses=BAD_REQUEST_RESPONSE,
+)
+def register(req: RegisterRequest, db: DbSession):
     """Register a new user with bcrypt-hashed password."""
     # Check if email already exists
     if db.query(User).filter(User.email == req.email).first():
@@ -47,8 +59,8 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     return {"message": "註冊成功", "user_id": user.id}
 
 
-@router.post("/login", response_model=AuthResponse)
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+@router.post("/login", response_model=AuthResponse, responses=UNAUTHORIZED_RESPONSE)
+def login(req: LoginRequest, db: DbSession):
     """Login with email and password, returns JWT token."""
     user = db.query(User).filter(User.email == req.email).first()
     if not user or not user.password_hash:
@@ -70,7 +82,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/google", response_model=AuthResponse)
-def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
+def google_login(req: GoogleLoginRequest, db: DbSession):
     """Create or reuse a Google-backed account and return a JWT token."""
     user = db.query(User).filter(User.email == req.email).first()
     if user is None:
@@ -108,13 +120,13 @@ def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: CurrentUser):
     """Get current logged-in user info (requires JWT)."""
     return UserOut.model_validate(current_user)
 
 
 @router.post("/logout")
-def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def logout(current_user: CurrentUser, db: DbSession):
     """Logout: set user presence to offline."""
     _ensure_presence(db, current_user, "offline")
     current_user.token_version += 1

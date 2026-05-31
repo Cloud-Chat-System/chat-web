@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PropTypes from 'prop-types'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import {
@@ -9,6 +10,20 @@ import {
 } from '../utils/validators'
 import { FiEye, FiEyeOff, FiMessageCircle, FiCheck, FiX } from 'react-icons/fi'
 import styles from '../styles/auth.module.css'
+
+function ValidationIcon({ valid, show }) {
+  if (!show) return null
+  return valid ? (
+    <span className={`${styles.inputIcon} ${styles.validIcon}`}><FiCheck size={16} /></span>
+  ) : (
+    <span className={`${styles.inputIcon} ${styles.invalidIcon}`}><FiX size={16} /></span>
+  )
+}
+
+ValidationIcon.propTypes = {
+  valid: PropTypes.bool.isRequired,
+  show: PropTypes.bool.isRequired,
+}
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -34,15 +49,6 @@ export default function RegisterPage() {
       setSuccess(true)
       setTimeout(() => navigate('/login'), 1500)
     } catch { /* error is set in store */ }
-  }
-
-  const ValidationIcon = ({ valid, show }) => {
-    if (!show) return null
-    return valid ? (
-      <span className={`${styles.inputIcon} ${styles.validIcon}`}><FiCheck size={16} /></span>
-    ) : (
-      <span className={`${styles.inputIcon} ${styles.invalidIcon}`}><FiX size={16} /></span>
-    )
   }
 
   return (
@@ -109,14 +115,14 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
               />
-              <span
+              <button
+                type="button"
                 className={styles.inputIcon}
                 onClick={() => setShowPw(!showPw)}
-                role="button"
-                tabIndex={0}
+                aria-label={showPw ? '隱藏密碼' : '顯示密碼'}
               >
                 {showPw ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-              </span>
+              </button>
             </div>
           </div>
 
@@ -151,7 +157,7 @@ export default function RegisterPage() {
             {isLoading ? (
               <span className={styles.btnLoading}>
                 <span className={styles.spinner} />
-                註冊中...
+                <span>註冊中...</span>
               </span>
             ) : '建立帳號'}
           </button>

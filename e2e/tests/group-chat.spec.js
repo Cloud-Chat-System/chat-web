@@ -5,7 +5,7 @@ const backendUrl = process.env.E2E_BACKEND_URL || 'http://127.0.0.1:8000'
 function uniqueUser(prefix) {
   const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   return {
-    username: `${prefix.toLowerCase()}_${id}`.replace(/-/g, '_'),
+    username: `${prefix.toLowerCase()}_${id}`.replaceAll('-', '_'),
     name: `${prefix} User ${id}`,
     email: `${prefix.toLowerCase()}-${id}@example.com`,
     password: 'password123',
