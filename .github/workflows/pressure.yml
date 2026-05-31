@@ -122,8 +122,17 @@ jobs:
       - name: Select pressure parameters
         id: params
         shell: bash
+        env:
+          SCENARIO: ${{ inputs.scenario }}
+          CUSTOM_USERS: ${{ inputs.users }}
+          CUSTOM_ONLINE_USERS: ${{ inputs.online_users }}
+          CUSTOM_ROOMS: ${{ inputs.rooms }}
+          CUSTOM_MESSAGES_PER_ROOM: ${{ inputs.messages_per_room }}
+          CUSTOM_HISTORY_FETCHES: ${{ inputs.history_fetches }}
+          CUSTOM_CONCURRENCY: ${{ inputs.concurrency }}
+          CUSTOM_MAX_P95_MS: ${{ inputs.max_p95_ms }}
         run: |
-          case "${{ inputs.scenario }}" in
+          case "$SCENARIO" in
             light)
               echo "users=50" >> "$GITHUB_OUTPUT"
               echo "online_users=10" >> "$GITHUB_OUTPUT"
@@ -152,53 +161,75 @@ jobs:
               echo "max_p95_ms=3000" >> "$GITHUB_OUTPUT"
               ;;
             custom)
-              echo "users=${{ inputs.users }}" >> "$GITHUB_OUTPUT"
-              echo "online_users=${{ inputs.online_users }}" >> "$GITHUB_OUTPUT"
-              echo "rooms=${{ inputs.rooms }}" >> "$GITHUB_OUTPUT"
-              echo "messages_per_room=${{ inputs.messages_per_room }}" >> "$GITHUB_OUTPUT"
-              echo "history_fetches=${{ inputs.history_fetches }}" >> "$GITHUB_OUTPUT"
-              echo "concurrency=${{ inputs.concurrency }}" >> "$GITHUB_OUTPUT"
-              echo "max_p95_ms=${{ inputs.max_p95_ms }}" >> "$GITHUB_OUTPUT"
+              echo "users=$CUSTOM_USERS" >> "$GITHUB_OUTPUT"
+              echo "online_users=$CUSTOM_ONLINE_USERS" >> "$GITHUB_OUTPUT"
+              echo "rooms=$CUSTOM_ROOMS" >> "$GITHUB_OUTPUT"
+              echo "messages_per_room=$CUSTOM_MESSAGES_PER_ROOM" >> "$GITHUB_OUTPUT"
+              echo "history_fetches=$CUSTOM_HISTORY_FETCHES" >> "$GITHUB_OUTPUT"
+              echo "concurrency=$CUSTOM_CONCURRENCY" >> "$GITHUB_OUTPUT"
+              echo "max_p95_ms=$CUSTOM_MAX_P95_MS" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported scenario: $SCENARIO" >&2
+              exit 1
               ;;
           esac
 
       - name: Run pressure scenario
+        shell: bash
+        env:
+          FAIL_ON_ERRORS: ${{ inputs.fail_on_errors }}
+          MAX_P95_MS: ${{ steps.params.outputs.max_p95_ms }}
+          MAX_REGISTER_P95_MS: ${{ inputs.max_register_p95_ms }}
+          MAX_LOGIN_P95_MS: ${{ inputs.max_login_p95_ms }}
+          MAX_WS_CONNECT_P95_MS: ${{ inputs.max_ws_connect_p95_ms }}
+          MAX_CREATE_ROOM_P95_MS: ${{ inputs.max_create_room_p95_ms }}
+          MAX_FETCH_MESSAGES_P95_MS: ${{ inputs.max_fetch_messages_p95_ms }}
+          PRESSURE_SCENARIO: ${{ inputs.scenario }}
+          PRESSURE_USERS: ${{ steps.params.outputs.users }}
+          PRESSURE_ONLINE_USERS: ${{ steps.params.outputs.online_users }}
+          PRESSURE_ROOMS: ${{ steps.params.outputs.rooms }}
+          PRESSURE_ROOM_TYPE: ${{ inputs.room_type }}
+          PRESSURE_GROUP_SIZE: ${{ inputs.group_size }}
+          PRESSURE_MESSAGES_PER_ROOM: ${{ steps.params.outputs.messages_per_room }}
+          PRESSURE_HISTORY_FETCHES: ${{ steps.params.outputs.history_fetches }}
+          PRESSURE_CONCURRENCY: ${{ steps.params.outputs.concurrency }}
         run: |
-          extra_args=""
-          if [ "${{ inputs.fail_on_errors }}" = "true" ]; then
-            extra_args="--pressure-fail-on-errors"
+          extra_args=()
+          if [ "$FAIL_ON_ERRORS" = "true" ]; then
+            extra_args+=(--pressure-fail-on-errors)
           fi
-          if [ "${{ steps.params.outputs.max_p95_ms }}" != "0" ]; then
-            extra_args="$extra_args --pressure-max-p95-ms ${{ steps.params.outputs.max_p95_ms }}"
+          if [ "$MAX_P95_MS" != "0" ]; then
+            extra_args+=(--pressure-max-p95-ms "$MAX_P95_MS")
           fi
-          if [ "${{ inputs.max_register_p95_ms }}" != "0" ]; then
-            extra_args="$extra_args --pressure-max-register-p95-ms ${{ inputs.max_register_p95_ms }}"
+          if [ "$MAX_REGISTER_P95_MS" != "0" ]; then
+            extra_args+=(--pressure-max-register-p95-ms "$MAX_REGISTER_P95_MS")
           fi
-          if [ "${{ inputs.max_login_p95_ms }}" != "0" ]; then
-            extra_args="$extra_args --pressure-max-login-p95-ms ${{ inputs.max_login_p95_ms }}"
+          if [ "$MAX_LOGIN_P95_MS" != "0" ]; then
+            extra_args+=(--pressure-max-login-p95-ms "$MAX_LOGIN_P95_MS")
           fi
-          if [ "${{ inputs.max_ws_connect_p95_ms }}" != "0" ]; then
-            extra_args="$extra_args --pressure-max-ws-connect-p95-ms ${{ inputs.max_ws_connect_p95_ms }}"
+          if [ "$MAX_WS_CONNECT_P95_MS" != "0" ]; then
+            extra_args+=(--pressure-max-ws-connect-p95-ms "$MAX_WS_CONNECT_P95_MS")
           fi
-          if [ "${{ inputs.max_create_room_p95_ms }}" != "0" ]; then
-            extra_args="$extra_args --pressure-max-create-room-p95-ms ${{ inputs.max_create_room_p95_ms }}"
+          if [ "$MAX_CREATE_ROOM_P95_MS" != "0" ]; then
+            extra_args+=(--pressure-max-create-room-p95-ms "$MAX_CREATE_ROOM_P95_MS")
           fi
-          if [ "${{ inputs.max_fetch_messages_p95_ms }}" != "0" ]; then
-            extra_args="$extra_args --pressure-max-fetch-messages-p95-ms ${{ inputs.max_fetch_messages_p95_ms }}"
+          if [ "$MAX_FETCH_MESSAGES_P95_MS" != "0" ]; then
+            extra_args+=(--pressure-max-fetch-messages-p95-ms "$MAX_FETCH_MESSAGES_P95_MS")
           fi
 
           docker compose exec -T backend python -m pytest -s tests/pressure -m pressure \
             --pressure-base-url http://127.0.0.1:8000 \
-            --pressure-scenario "${{ inputs.scenario }}" \
-            --pressure-users "${{ steps.params.outputs.users }}" \
-            --pressure-online-users "${{ steps.params.outputs.online_users }}" \
-            --pressure-rooms "${{ steps.params.outputs.rooms }}" \
-            --pressure-room-type "${{ inputs.room_type }}" \
-            --pressure-group-size "${{ inputs.group_size }}" \
-            --pressure-messages-per-room "${{ steps.params.outputs.messages_per_room }}" \
-            --pressure-history-fetches "${{ steps.params.outputs.history_fetches }}" \
-            --pressure-concurrency "${{ steps.params.outputs.concurrency }}" \
-            $extra_args
+            --pressure-scenario "$PRESSURE_SCENARIO" \
+            --pressure-users "$PRESSURE_USERS" \
+            --pressure-online-users "$PRESSURE_ONLINE_USERS" \
+            --pressure-rooms "$PRESSURE_ROOMS" \
+            --pressure-room-type "$PRESSURE_ROOM_TYPE" \
+            --pressure-group-size "$PRESSURE_GROUP_SIZE" \
+            --pressure-messages-per-room "$PRESSURE_MESSAGES_PER_ROOM" \
+            --pressure-history-fetches "$PRESSURE_HISTORY_FETCHES" \
+            --pressure-concurrency "$PRESSURE_CONCURRENCY" \
+            "${extra_args[@]}"
 
       - name: Show service logs
         if: always()
