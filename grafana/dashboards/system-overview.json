@@ -105,7 +105,7 @@
       },
       "targets": [
         {
-          "expr": "sum(rate(chat_web_http_requests_total{path!=\"/metrics\"}[1m]))",
+          "expr": "sum(irate(chat_web_http_requests_total{path!=\"/metrics\"}[1m]))",
           "refId": "A"
         }
       ],
@@ -204,7 +204,7 @@
       "id": 5,
       "targets": [
         {
-          "expr": "sum by (path, method) (rate(chat_web_http_requests_total{path!=\"/metrics\"}[1m]))",
+          "expr": "sum by (path, method) (irate(chat_web_http_requests_total{method!=\"OPTIONS\",path!=\"/metrics\"}[1m]))",
           "legendFormat": "{{method}} {{path}}",
           "refId": "A"
         }
@@ -247,7 +247,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "reqps"
         },
         "overrides": []
       },
@@ -255,6 +255,34 @@
         "h": 9,
         "w": 12,
         "x": 0,
+        "y": 16
+      },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum by (path) (irate(chat_web_http_requests_total{method=\"OPTIONS\",path!=\"/metrics\"}[1m]))",
+          "legendFormat": "OPTIONS {{path}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP Preflight Requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
         "y": 16
       },
       "id": 7,
@@ -281,8 +309,8 @@
       "gridPos": {
         "h": 9,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 25
       },
       "id": 8,
       "targets": [
@@ -314,6 +342,6 @@
   "timezone": "browser",
   "title": "Chat Web Minimal Observability",
   "uid": "chat-web-system-overview",
-  "version": 2,
+  "version": 3,
   "weekStart": ""
 }

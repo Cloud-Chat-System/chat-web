@@ -63,6 +63,13 @@ That network is created when the base `chat-web` stack starts.
    - `Container CPU Rate`
    - `Container Memory Working Set`
 
+## Route-level interpretation
+
+- `HTTP Throughput by Route` now groups dynamic routes by FastAPI route template, such as `/chatrooms/{room_id}/messages`
+- `HTTP Throughput by Route` excludes `OPTIONS` so business API traffic is easier to read
+- `HTTP Preflight Requests` is the companion panel for browser CORS preflight traffic
+- `Backend Request Rate` still reflects the overall backend HTTP request volume, so it can rise from both business requests and preflight requests
+
 ## Notes for Docker Desktop on Windows
 
 - `node-exporter` and `cadvisor` can be more environment-sensitive than backend metrics.

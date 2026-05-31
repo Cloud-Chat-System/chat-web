@@ -1,6 +1,7 @@
 """FastAPI application entry point with WebSocket support."""
 
 from contextlib import asynccontextmanager
+import re
 from time import perf_counter
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -35,6 +36,11 @@ WEBSOCKET_CONNECTIONS_ACTIVE = Gauge(
 WEBSOCKET_CONNECTIONS_TOTAL = Counter(
     "chat_web_websocket_connections_total",
     "Total accepted WebSocket connections.",
+)
+
+CHATROOM_ROUTE_PATTERNS = (
+    (re.compile(r"^/chatrooms/\d+/messages/?$"), "/chatrooms/{room_id}/messages"),
+    (re.compile(r"^/chatrooms/\d+/read/?$"), "/chatrooms/{room_id}/read"),
 )
 
 
@@ -75,7 +81,8 @@ async def record_http_metrics(request, call_next):
     start = perf_counter()
     response = await call_next(request)
     duration = perf_counter() - start
-    path = request.url.path
+    route = request.scope.get("route")
+    path = _normalize_metrics_path(getattr(route, "path", request.url.path))
 
     HTTP_REQUESTS_TOTAL.labels(
         method=request.method,
@@ -84,6 +91,14 @@ async def record_http_metrics(request, call_next):
     ).inc()
     HTTP_REQUEST_DURATION_SECONDS.labels(method=request.method, path=path).observe(duration)
     return response
+
+
+def _normalize_metrics_path(path: str) -> str:
+    """Collapse dynamic URL segments so Grafana panels group the same API together."""
+    for pattern, replacement in CHATROOM_ROUTE_PATTERNS:
+        if pattern.match(path):
+            return replacement
+    return path
 
 
 @app.get("/health")
