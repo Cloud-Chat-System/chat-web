@@ -63,8 +63,8 @@ def test_metrics_endpoint_exposes_prometheus_format(client):
 
 
 def test_metrics_use_route_templates_for_dynamic_paths(api, client):
-    assert api.register_user("alice", "alice@example.com").status_code == 200
-    assert api.register_user("bob", "bob@example.com").status_code == 200
+    assert api.register_user("alice", "alice@example.com").status_code == 201
+    assert api.register_user("bob", "bob@example.com").status_code == 201
 
     login = api.login_user("alice@example.com")
     token = login.json()["token"]
