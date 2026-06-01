@@ -6,8 +6,9 @@ services:
       - "${PROMETHEUS_PORT}:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - chat_web_shared
 
   grafana:
     image: grafana/grafana:latest
@@ -43,3 +44,8 @@ services:
 
 volumes:
   grafana_data:
+
+networks:
+  chat_web_shared:
+    external: true
+    name: chat-web_default

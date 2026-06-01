@@ -1,10 +1,13 @@
 """FastAPI application entry point with WebSocket support."""
 
 from contextlib import asynccontextmanager
+import re
+from time import perf_counter
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from prometheus_client import Counter, Gauge, Histogram, make_asgi_app
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -14,6 +17,31 @@ from .database import Base, engine, get_db
 from .models import ChatRoomMember, UserPresence
 from .routers import auth_router, chatroom_router, user_router
 from .ws_manager import ws_manager
+
+HTTP_REQUESTS_TOTAL = Counter(
+    "chat_web_http_requests_total",
+    "Total HTTP requests handled by the backend.",
+    ["method", "path", "status"],
+)
+HTTP_REQUEST_DURATION_SECONDS = Histogram(
+    "chat_web_http_request_duration_seconds",
+    "HTTP request latency in seconds.",
+    ["method", "path"],
+    buckets=(0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10),
+)
+WEBSOCKET_CONNECTIONS_ACTIVE = Gauge(
+    "chat_web_websocket_connections_active",
+    "Active WebSocket connections.",
+)
+WEBSOCKET_CONNECTIONS_TOTAL = Counter(
+    "chat_web_websocket_connections_total",
+    "Total accepted WebSocket connections.",
+)
+
+CHATROOM_ROUTE_PATTERNS = (
+    (re.compile(r"^/chatrooms/\d+/messages/?$"), "/chatrooms/{room_id}/messages"),
+    (re.compile(r"^/chatrooms/\d+/read/?$"), "/chatrooms/{room_id}/read"),
+)
 
 
 @asynccontextmanager
@@ -44,6 +72,33 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(chatroom_router.router)
 app.include_router(user_router.router)
+app.mount("/metrics", make_asgi_app())
+
+
+@app.middleware("http")
+async def record_http_metrics(request, call_next):
+    """Expose a small, stable set of request metrics for Grafana dashboards."""
+    start = perf_counter()
+    response = await call_next(request)
+    duration = perf_counter() - start
+    route = request.scope.get("route")
+    path = _normalize_metrics_path(getattr(route, "path", request.url.path))
+
+    HTTP_REQUESTS_TOTAL.labels(
+        method=request.method,
+        path=path,
+        status=str(response.status_code),
+    ).inc()
+    HTTP_REQUEST_DURATION_SECONDS.labels(method=request.method, path=path).observe(duration)
+    return response
+
+
+def _normalize_metrics_path(path: str) -> str:
+    """Collapse dynamic URL segments so Grafana panels group the same API together."""
+    for pattern, replacement in CHATROOM_ROUTE_PATTERNS:
+        if pattern.match(path):
+            return replacement
+    return path
 
 
 @app.get("/health")
@@ -83,9 +138,13 @@ async def websocket_endpoint(websocket: WebSocket):
     Client must send a JWT token as the first message after connecting.
     """
     user_id = None
+    connection_tracked = False
     db: Session = next(get_db())
     try:
         await websocket.accept()
+        WEBSOCKET_CONNECTIONS_TOTAL.inc()
+        WEBSOCKET_CONNECTIONS_ACTIVE.inc()
+        connection_tracked = True
 
         auth_data = await websocket.receive_json()
         token = auth_data.get("token", "")
@@ -137,6 +196,8 @@ async def websocket_endpoint(websocket: WebSocket):
                     pass
 
         db.close()
+        if connection_tracked:
+            WEBSOCKET_CONNECTIONS_ACTIVE.dec()
 
 
 def _get_contact_ids(user_id: int, db: Session) -> list:
