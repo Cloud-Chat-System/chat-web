@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { randomUUID } from 'node:crypto'
+import { randomBytes } from 'node:crypto'
 
 const backendUrl = process.env.E2E_BACKEND_URL || 'http://127.0.0.1:8000'
 
 function uniqueUser(prefix) {
-  const id = `${Date.now()}-${randomUUID()}`
+  const id = `${Date.now()}-${randomBytes(4).toString('hex')}`
   return {
     username: `${prefix.toLowerCase()}_${id}`.replaceAll('-', '_'),
     name: `${prefix} User ${id}`,
