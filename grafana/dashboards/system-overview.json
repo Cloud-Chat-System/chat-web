@@ -27,18 +27,38 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit"
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 1,
+          "min": 0
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
+        "h": 7,
+        "w": 6,
         "x": 0,
         "y": 0
       },
       "id": 1,
       "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -49,11 +69,11 @@
       },
       "targets": [
         {
-          "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))",
+          "expr": "max(up{job=\"chat-backend\"})",
           "refId": "A"
         }
       ],
-      "title": "CPU Usage",
+      "title": "Backend Scrape Status",
       "type": "stat"
     },
     {
@@ -63,14 +83,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit"
+          "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
+        "h": 7,
+        "w": 6,
+        "x": 6,
         "y": 0
       },
       "id": 2,
@@ -85,11 +105,11 @@
       },
       "targets": [
         {
-          "expr": "1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+          "expr": "sum(irate(chat_web_http_requests_total{path!=\"/metrics\"}[1m]))",
           "refId": "A"
         }
       ],
-      "title": "Memory Usage",
+      "title": "Backend Request Rate",
       "type": "stat"
     },
     {
@@ -98,13 +118,15 @@
         "uid": "prometheus"
       },
       "fieldConfig": {
-        "defaults": {},
+        "defaults": {
+          "unit": "s"
+        },
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
+        "h": 7,
+        "w": 6,
+        "x": 12,
         "y": 0
       },
       "id": 3,
@@ -119,12 +141,132 @@
       },
       "targets": [
         {
-          "expr": "count(container_last_seen{name!=\"\"})",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(chat_web_http_request_duration_seconds_bucket{path!=\"/metrics\"}[5m])))",
           "refId": "A"
         }
       ],
-      "title": "Visible Containers",
+      "title": "Backend p95 Latency",
       "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "chat_web_websocket_connections_active",
+          "refId": "A"
+        }
+      ],
+      "title": "Active WebSocket Connections",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 7
+      },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "sum by (path, method) (irate(chat_web_http_requests_total{method!=\"OPTIONS\",path!=\"/metrics\"}[1m]))",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP Throughput by Route",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 7
+      },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, path) (rate(chat_web_http_request_duration_seconds_bucket{path!=\"/metrics\"}[5m])))",
+          "legendFormat": "{{path}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP p95 by Route",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum by (path) (irate(chat_web_http_requests_total{method=\"OPTIONS\",path!=\"/metrics\"}[1m]))",
+          "legendFormat": "OPTIONS {{path}}",
+          "refId": "A"
+        }
+      ],
+      "title": "HTTP Preflight Requests",
+      "type": "timeseries"
     },
     {
       "datasource": {
@@ -140,10 +282,10 @@
       "gridPos": {
         "h": 9,
         "w": 12,
-        "x": 0,
-        "y": 8
+        "x": 12,
+        "y": 16
       },
-      "id": 4,
+      "id": 7,
       "targets": [
         {
           "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]))",
@@ -167,10 +309,10 @@
       "gridPos": {
         "h": 9,
         "w": 12,
-        "x": 12,
-        "y": 8
+        "x": 0,
+        "y": 25
       },
-      "id": 5,
+      "id": 8,
       "targets": [
         {
           "expr": "sum(container_memory_working_set_bytes{name!=\"\"})",
@@ -186,19 +328,20 @@
   "style": "dark",
   "tags": [
     "chat-web",
-    "system"
+    "system",
+    "backend"
   ],
   "templating": {
     "list": []
   },
   "time": {
-    "from": "now-6h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Chat Web System Overview",
+  "title": "Chat Web Minimal Observability",
   "uid": "chat-web-system-overview",
-  "version": 1,
+  "version": 3,
   "weekStart": ""
 }
