@@ -2,10 +2,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+RUN chown node:node /app
 
-RUN npm install
+COPY --chown=node:node package*.json ./
 
-COPY . .
+USER node
+
+RUN npm ci
+
+COPY --chown=node:node index.html vite.config.js ./
+COPY --chown=node:node public ./public
+COPY --chown=node:node src ./src
 
 CMD ["sh", "-c", "npm run dev -- --host ${FRONTEND_HOST} --port ${FRONTEND_CONTAINER_PORT}"]
