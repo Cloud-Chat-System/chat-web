@@ -12,8 +12,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN groupadd --system app && \
     useradd --system --gid app --home-dir /app --shell /usr/sbin/nologin app
 
-COPY --chmod=500 --chown=app:app app ./app
-COPY --chmod=400 --chown=app:app seed.py .
+COPY --chown=app:app app ./app
+RUN chmod -R a-w /app/app
+
+COPY --chown=app:app seed.py .
+RUN chmod a-w /app/seed.py
 
 USER app
 
