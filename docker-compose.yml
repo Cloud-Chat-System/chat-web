@@ -2,6 +2,7 @@ services:
   frontend:
     build: ./frontend
     container_name: chat_frontend
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     env_file:
       - .env
     ports:
@@ -21,6 +22,7 @@ services:
   backend:
     build: ./backend
     container_name: chat_backend
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     ports:
       - "${BACKEND_PORT}:${BACKEND_CONTAINER_PORT}"
     volumes:
@@ -42,6 +44,7 @@ services:
   db:
     image: postgres:16.6
     container_name: chat_db
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
     ports:
       - "${POSTGRES_HOST_PORT}:${POSTGRES_PORT}"
     env_file:
