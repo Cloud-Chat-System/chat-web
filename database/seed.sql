@@ -1,47 +1,53 @@
+WITH seed_users (
+    id,
+    username,
+    email,
+    display_name
+) AS (
+    VALUES
+        (1, 'admin', 'admin@tsmc.com', '系統管理員'),
+        (2, 'alice', 'alice@tsmc.com', 'Alice'),
+        (3, 'bob', 'bob@tsmc.com', 'Bob')
+)
 INSERT INTO users (
     id,
     username,
     email,
-    password_hash,
     display_name,
     auth_provider,
     is_active
 )
-VALUES
-(
-    1,
-    'admin',
-    'admin@tsmc.com',
-    '$2b$12$8v0Rcsq5rhaOFehgGwFZA.5vKtNgJ1RKKOFXNAJkoWIaG2a9U0rLe',
-    '系統管理員',
+SELECT
+    id,
+    username,
+    email,
+    display_name,
     'local',
     TRUE
-),
-(
-    2,
-    'alice',
-    'alice@tsmc.com',
-    '$2b$12$8v0Rcsq5rhaOFehgGwFZA.5vKtNgJ1RKKOFXNAJkoWIaG2a9U0rLe',
-    'Alice',
-    'local',
-    TRUE
-),
-(
-    3,
-    'bob',
-    'bob@tsmc.com',
-    '$2b$12$8v0Rcsq5rhaOFehgGwFZA.5vKtNgJ1RKKOFXNAJkoWIaG2a9U0rLe',
-    'Bob',
-    'local',
-    TRUE
-)
+FROM seed_users
 ON CONFLICT (username) DO NOTHING;
 
+UPDATE users
+SET
+    password_hash = NULL,
+    token_version = token_version + 1,
+    updated_at = NOW()
+WHERE (username, email) IN (
+    ('admin', 'admin@tsmc.com'),
+    ('alice', 'alice@tsmc.com'),
+    ('bob', 'bob@tsmc.com')
+)
+AND password_hash IS NOT NULL;
+
+WITH seed_presence (id, user_id) AS (
+    VALUES
+        (1, 1),
+        (2, 2),
+        (3, 3)
+)
 INSERT INTO user_presence (id, user_id, status)
-VALUES
-    (1, 1, 'offline'),
-    (2, 2, 'offline'),
-    (3, 3, 'offline')
+SELECT id, user_id, 'offline'
+FROM seed_presence
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO chat_rooms (
@@ -89,6 +95,11 @@ ON CONFLICT (id) DO NOTHING;
 UPDATE chat_rooms
 SET last_message_at = (
     SELECT MAX(created_at)
+    FROM messages
+    WHERE messages.room_id = chat_rooms.id
+)
+WHERE EXISTS (
+    SELECT 1
     FROM messages
     WHERE messages.room_id = chat_rooms.id
 );

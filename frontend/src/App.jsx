@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import PropTypes from 'prop-types'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthStore } from './store/useAuthStore'
 import LoginPage from './pages/LoginPage'
@@ -18,6 +19,14 @@ function PublicRoute({ children }) {
   if (!isInitialized) return <div className="flex h-screen items-center justify-center text-tsmc-blue">Loading...</div>
   if (user) return <Navigate to="/chat" replace />
   return children
+}
+
+ProtectedRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+}
+
+PublicRoute.propTypes = {
+  children: PropTypes.node.isRequired,
 }
 
 export default function App() {

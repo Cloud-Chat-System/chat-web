@@ -42,6 +42,7 @@ CHATROOM_ROUTE_PATTERNS = (
     (re.compile(r"^/chatrooms/\d+/messages/?$"), "/chatrooms/{room_id}/messages"),
     (re.compile(r"^/chatrooms/\d+/read/?$"), "/chatrooms/{room_id}/read"),
 )
+SERVICE_NAME = "TSMC Messenger API"
 
 
 @asynccontextmanager
@@ -52,7 +53,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="TSMC Messenger API",
+    title=SERVICE_NAME,
     description="TSMC Messenger backend API",
     version="1.0.0",
 )
@@ -104,7 +105,7 @@ def _normalize_metrics_path(path: str) -> str:
 @app.get("/health")
 def health_check():
     """Health check endpoint."""
-    return {"status": "ok", "service": "TSMC Messenger API"}
+    return {"status": "ok", "service": SERVICE_NAME}
 
 
 def _check_database_health() -> tuple[bool, str]:
@@ -122,13 +123,52 @@ def api_health_check():
     """Readiness check endpoint with database status."""
     db_ok, db_status = _check_database_health()
     payload = {
-        "service": "TSMC Messenger API",
+        "service": SERVICE_NAME,
         "status": "ok" if db_ok else "degraded",
         "database": db_status,
     }
     if not db_ok:
         return JSONResponse(status_code=503, content=payload)
     return payload
+
+
+async def _authenticate_websocket(websocket: WebSocket) -> int | None:
+    auth_data = await websocket.receive_json()
+    token = auth_data.get("token", "")
+
+    try:
+        payload = decode_token(token)
+        return int(payload.get("sub", 0))
+    except Exception:
+        await websocket.send_json({"type": "error", "message": "Unauthorized"})
+        await websocket.close()
+        return None
+
+
+def _set_presence(db: Session, user_id: int, status: str) -> None:
+    presence = db.query(UserPresence).filter(UserPresence.user_id == user_id).first()
+    if presence:
+        presence.status = status
+        db.commit()
+
+
+async def _mark_user_presence(db: Session, user_id: int, status: str) -> None:
+    _set_presence(db, user_id, status)
+    contact_ids = _get_contact_ids(user_id, db)
+    await ws_manager.broadcast_presence(user_id, status, contact_ids)
+
+
+def _connect_websocket(websocket: WebSocket, user_id: int) -> None:
+    if user_id not in ws_manager.active_connections:
+        ws_manager.active_connections[user_id] = set()
+    ws_manager.active_connections[user_id].add(websocket)
+
+
+async def _handle_websocket_messages(websocket: WebSocket) -> None:
+    while True:
+        data = await websocket.receive_json()
+        if data.get("type", "") == "ping":
+            await websocket.send_json({"type": "pong"})
 
 
 @app.websocket("/ws")
@@ -146,34 +186,14 @@ async def websocket_endpoint(websocket: WebSocket):
         WEBSOCKET_CONNECTIONS_ACTIVE.inc()
         connection_tracked = True
 
-        auth_data = await websocket.receive_json()
-        token = auth_data.get("token", "")
-
-        try:
-            payload = decode_token(token)
-            user_id = int(payload.get("sub", 0))
-        except Exception:
-            await websocket.send_json({"type": "error", "message": "Unauthorized"})
-            await websocket.close()
+        user_id = await _authenticate_websocket(websocket)
+        if user_id is None:
             return
 
-        if user_id not in ws_manager.active_connections:
-            ws_manager.active_connections[user_id] = set()
-        ws_manager.active_connections[user_id].add(websocket)
-
-        presence = db.query(UserPresence).filter(UserPresence.user_id == user_id).first()
-        if presence:
-            presence.status = "online"
-            db.commit()
-
-        contact_ids = _get_contact_ids(user_id, db)
-        await ws_manager.broadcast_presence(user_id, "online", contact_ids)
+        _connect_websocket(websocket, user_id)
+        await _mark_user_presence(db, user_id, "online")
         await websocket.send_json({"type": "connected", "user_id": user_id})
-
-        while True:
-            data = await websocket.receive_json()
-            if data.get("type", "") == "ping":
-                await websocket.send_json({"type": "pong"})
+        await _handle_websocket_messages(websocket)
 
     except WebSocketDisconnect:
         pass
@@ -185,13 +205,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             if not ws_manager.is_online(user_id):
                 try:
-                    presence = db.query(UserPresence).filter(UserPresence.user_id == user_id).first()
-                    if presence:
-                        presence.status = "offline"
-                        db.commit()
-
-                    contact_ids = _get_contact_ids(user_id, db)
-                    await ws_manager.broadcast_presence(user_id, "offline", contact_ids)
+                    await _mark_user_presence(db, user_id, "offline")
                 except Exception:
                     pass
 
