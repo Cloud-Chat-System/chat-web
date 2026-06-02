@@ -1,0 +1,59 @@
+PS C:\Users\ASUS\Documents\Cloud native\chat-web> python  kafka/scripts/run_kafka_load_test.py --profile kafka/load-profile.example.json
+=== Kafka Load Profile ===
+scenario=steady-state-throughput-and-online-users
+topic=chat.events partitions=12
+stage_rates=[100, 250, 500, 750, 1000]
+stage_duration_seconds=60
+target_rate_per_second=1000
+target_online_users=100000
+producer_count=1
+throughput_pass_ratio=0.90
+safety_factor=0.70
+$ docker compose -f C:\Users\ASUS\Documents\Cloud native\chat-web\kafka\docker-compose.yml exec -T kafka kafka-topics.sh --bootstrap-server kafka:9092 --create --if-not-exists --topic chat.events --partitions 12 --replication-factor 1
+
+--- Stage 1: target 100 msg/s for 60s ---
+$ docker compose -f C:\Users\ASUS\Documents\Cloud native\chat-web\kafka\docker-compose.yml exec -T kafka kafka-producer-perf-test.sh --topic chat.events --num-records 6000 --record-size 512 --throughput 100 --producer-props bootstrap.servers=kafka:9092 acks=1 compression.type=none batch.size=32768 linger.ms=5 client.id=steady-state-throughput-and-online-users-stage-1
+actual=99.97 msg/s p95=8.00 ms ratio=100.0% status=PASS
+
+--- Stage 2: target 250 msg/s for 60s ---
+$ docker compose -f C:\Users\ASUS\Documents\Cloud native\chat-web\kafka\docker-compose.yml exec -T kafka kafka-producer-perf-test.sh --topic chat.events --num-records 15000 --record-size 512 --throughput 250 --producer-props bootstrap.servers=kafka:9092 acks=1 compression.type=none batch.size=32768 linger.ms=5 client.id=steady-state-throughput-and-online-users-stage-2
+actual=249.82 msg/s p95=7.00 ms ratio=99.9% status=PASS
+
+--- Stage 3: target 500 msg/s for 60s ---
+$ docker compose -f C:\Users\ASUS\Documents\Cloud native\chat-web\kafka\docker-compose.yml exec -T kafka kafka-producer-perf-test.sh --topic chat.events --num-records 30000 --record-size 512 --throughput 500 --producer-props bootstrap.servers=kafka:9092 acks=1 compression.type=none batch.size=32768 linger.ms=5 client.id=steady-state-throughput-and-online-users-stage-3
+actual=499.84 msg/s p95=7.00 ms ratio=100.0% status=PASS
+
+--- Stage 4: target 750 msg/s for 60s ---
+$ docker compose -f C:\Users\ASUS\Documents\Cloud native\chat-web\kafka\docker-compose.yml exec -T kafka kafka-producer-perf-test.sh --topic chat.events --num-records 45000 --record-size 512 --throughput 750 --producer-props bootstrap.servers=kafka:9092 acks=1 compression.type=none batch.size=32768 linger.ms=5 client.id=steady-state-throughput-and-online-users-stage-4
+actual=749.83 msg/s p95=7.00 ms ratio=100.0% status=PASS
+
+--- Stage 5: target 1000 msg/s for 60s ---
+$ docker compose -f C:\Users\ASUS\Documents\Cloud native\chat-web\kafka\docker-compose.yml exec -T kafka kafka-producer-perf-test.sh --topic chat.events --num-records 60000 --record-size 512 --throughput 1000 --producer-props bootstrap.servers=kafka:9092 acks=1 compression.type=none batch.size=32768 linger.ms=5 client.id=steady-state-throughput-and-online-users-stage-5
+actual=999.68 msg/s p95=7.00 ms ratio=100.0% status=PASS
+
+=== Kafka Load Test Summary ===
+stage  target msg/s  actual msg/s  pass%   avg ms   p95 ms   p99 ms   max ms  status
+    1           100       99.97  100.0%    6.91    8.00   14.00  466.00  PASS
+    2           250      249.82   99.9%    4.62    7.00   11.00  483.00  PASS
+    3           500      499.84  100.0%    4.45    7.00   14.00  581.00  PASS
+    4           750      749.83  100.0%    4.82    7.00   13.00  496.00  PASS
+    5          1000      999.68  100.0%    4.34    7.00   12.00  477.00  PASS
+
+=== Capacity Estimate ===
+max_sustainable_rate_per_vm=999.68 msg/s
+estimated_kafka_vm_count=2
+estimated_app_vm_count_for_online_users=provide observedOnlineUsersPerVm to calculate
+
+
+CONTAINER ID   IMAGE                              COMMAND                   CREATED             STATUS                 PORTS                                         NAMES
+375bd0e25b56   grafana/grafana:latest             "/run.sh"                 6 minutes ago       Up 6 minutes           0.0.0.0:3001->3000/tcp, [::]:3001->3000/tcp   chat_grafana
+38e0bad11a45   bitnamilegacy/kafka:3.7.0          "/opt/bitnami/script…"   8 minutes ago       Up 8 minutes           9092/tcp                                      kafka-mock-slow-consumer-1
+e077cd4397ab   prom/prometheus:latest             "/bin/prometheus --c…"   About an hour ago   Up About an hour       0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp   chat_prometheus
+1e58071b9350   danielqsj/kafka-exporter:v1.7.0    "/bin/kafka_exporter…"   About an hour ago   Up About an hour       0.0.0.0:9308->9308/tcp, [::]:9308->9308/tcp   chat_kafka_exporter
+8a2364b8b604   provectuslabs/kafka-ui:latest      "/bin/sh -c 'java --…"   2 hours ago         Up 2 hours             0.0.0.0:8081->8080/tcp, [::]:8081->8080/tcp   chat_kafka_ui
+27d91c14367d   chat-web-frontend                  "docker-entrypoint.s…"   2 hours ago         Up 2 hours             0.0.0.0:3000->5173/tcp, [::]:3000->5173/tcp   chat_frontend
+146b46f3347c   chat-web-backend                   "sh -c 'uvicorn app.…"   2 hours ago         Up 2 hours             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp   chat_backend
+a675e6e60263   bitnamilegacy/kafka:3.7.0          "/opt/bitnami/script…"   2 hours ago         Up 2 hours             0.0.0.0:9094->9094/tcp, [::]:9094->9094/tcp   chat_kafka
+25a5ea256f96   prom/node-exporter:latest          "/bin/node_exporter"      3 hours ago         Up 2 hours             0.0.0.0:9100->9100/tcp, [::]:9100->9100/tcp   chat_node_exporter
+57006c5cec40   gcr.io/cadvisor/cadvisor:v0.49.1   "/usr/bin/cadvisor -…"   3 hours ago         Up 2 hours (healthy)   0.0.0.0:8088->8080/tcp, [::]:8088->8080/tcp   chat_cadvisor
+5799e3767cdc   postgres:16.6                      "docker-entrypoint.s…"   4 hours ago         Up 2 hours (healthy)   0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp   chat_db
