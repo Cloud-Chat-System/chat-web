@@ -8,6 +8,7 @@ This directory is the shared workspace for Prometheus and Grafana monitoring.
 - Container-level visibility
 - Dashboard provisioning for the chat-web project
 - Backend request and WebSocket metrics for pressure testing
+- Kafka producer, consumer, lag, and backlog metrics
 
 ## Quick start
 
@@ -27,6 +28,8 @@ This directory is the shared workspace for Prometheus and Grafana monitoring.
   Auto-loaded datasource and dashboard providers
 - `dashboards/system-overview.json`
   Minimal dashboard for backend, WebSocket, and container signals
+- `dashboards/kafka-observability.json`
+  Kafka producer, consumer, lag, and backlog dashboard
 
 ## Recommended startup order
 
@@ -63,6 +66,31 @@ That network is created when the base `chat-web` stack starts.
    - `Container CPU Rate`
    - `Container Memory Working Set`
 
+## Kafka Monitoring Flow
+
+1. Start the base app stack so the shared Docker network `chat-web_default` exists:
+   `docker compose up --build -d`
+2. Copy Kafka env file:
+   `copy kafka\.env.example kafka\.env`
+3. Start Kafka and exporter:
+   `docker compose -f kafka/docker-compose.yml --env-file kafka/.env up -d kafka kafka-ui kafka-exporter`
+4. Start the optional slow mock consumer when you want lag to accumulate:
+   `docker compose -f kafka/docker-compose.yml --env-file kafka/.env --profile consumer-demo up -d mock-slow-consumer`
+5. Start the monitoring stack:
+   `docker compose -f grafana/docker-compose.yml --env-file grafana/.env up -d`
+6. Confirm Prometheus targets are `UP` at `http://localhost:9090/targets`
+   - `chat-backend`
+   - `kafka-exporter`
+7. Open Grafana and load `Kafka Producer Consumer Lag`
+8. Run the Kafka load test:
+   `python kafka/scripts/run_kafka_load_test.py --profile kafka/load-profile.example.json`
+9. Watch these panels:
+   - `Producer Rate`
+   - `Consumer Rate`
+   - `Consumer Lag`
+   - `Backlog`
+   - `Produced vs Consumed Offsets`
+
 ## Route-level interpretation
 
 - `HTTP Throughput by Route` now groups dynamic routes by FastAPI route template, such as `/chatrooms/{room_id}/messages`
@@ -78,6 +106,5 @@ That network is created when the base `chat-web` stack starts.
 
 ## Suggested next steps for the owner
 
-- Extend metrics for Kafka producer/consumer throughput and lag
 - Add application-level counters around chat send, fetch, and persistence flows
 - Split dashboards into system, Kafka, and application views when metrics mature
