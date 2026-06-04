@@ -1,0 +1,10 @@
+*
+!index.html
+!package.json
+!package-lock.json
+!public/
+!public/**
+!src/
+!src/**
+!vite.config.js
+!Dockerfile

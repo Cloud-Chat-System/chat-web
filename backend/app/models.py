@@ -2,10 +2,20 @@
 
 from datetime import datetime
 from sqlalchemy import (
-    Column, Integer, String, Text, Boolean, DateTime, ForeignKey, UniqueConstraint, Index
+    Column,
+    Integer,
+    String,
+    Text,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    UniqueConstraint,
+    Index,
 )
 from sqlalchemy.orm import relationship
 from .database import Base
+
+USER_ID_FK = "users.id"
 
 
 class User(Base):
@@ -37,7 +47,7 @@ class ChatRoom(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100))
     room_type = Column(String(10), nullable=False, default="direct")  # 'direct' | 'group'
-    created_by = Column(Integer, ForeignKey("users.id"))
+    created_by = Column(Integer, ForeignKey(USER_ID_FK))
     last_message_at = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -47,9 +57,7 @@ class ChatRoom(Base):
     messages = relationship("Message", back_populates="room", cascade="all, delete-orphan")
     creator = relationship("User", foreign_keys=[created_by])
 
-    __table_args__ = (
-        Index("idx_chat_rooms_last_message_at", "last_message_at"),
-    )
+    __table_args__ = (Index("idx_chat_rooms_last_message_at", "last_message_at"),)
 
 
 class ChatRoomMember(Base):
@@ -57,7 +65,7 @@ class ChatRoomMember(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     room_id = Column(Integer, ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey(USER_ID_FK, ondelete="CASCADE"), nullable=False)
     is_admin = Column(Boolean, default=False)
     last_read_at = Column(DateTime, default=datetime.utcnow)
     joined_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -78,7 +86,7 @@ class Message(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     room_id = Column(Integer, ForeignKey("chat_rooms.id", ondelete="CASCADE"), nullable=False)
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    sender_id = Column(Integer, ForeignKey(USER_ID_FK), nullable=False)
     content = Column(Text, nullable=False)
     message_type = Column(String(10), default="text")  # 'text' | 'image' | 'file'
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -87,16 +95,14 @@ class Message(Base):
     room = relationship("ChatRoom", back_populates="messages")
     sender = relationship("User", back_populates="messages")
 
-    __table_args__ = (
-        Index("idx_messages_room_created_at", "room_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_messages_room_created_at", "room_id", "created_at"),)
 
 
 class Notification(Base):
     __tablename__ = "notifications"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey(USER_ID_FK, ondelete="CASCADE"), nullable=False)
     type = Column(String(30), nullable=False)
     content = Column(Text)
     is_read = Column(Boolean, default=False)
@@ -106,22 +112,20 @@ class Notification(Base):
     # Relationships
     user = relationship("User", back_populates="notifications")
 
-    __table_args__ = (
-        Index("idx_notifications_user_is_read", "user_id", "is_read"),
-    )
+    __table_args__ = (Index("idx_notifications_user_is_read", "user_id", "is_read"),)
 
 
 class UserPresence(Base):
     __tablename__ = "user_presence"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    user_id = Column(
+        Integer, ForeignKey(USER_ID_FK, ondelete="CASCADE"), unique=True, nullable=False
+    )
     status = Column(String(10), default="offline")  # 'online' | 'offline' | 'away'
     last_seen_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     user = relationship("User", back_populates="presence")
 
-    __table_args__ = (
-        Index("idx_user_presence_status", "status"),
-    )
+    __table_args__ = (Index("idx_user_presence_status", "status"),)

@@ -30,6 +30,26 @@ ps:
 
 setup: install-hooks install-frontend-deps
 	@echo "🟢 [Success] 本地 Hooks 與前端依賴初始化完畢，backend 維持 Docker-first。"
+kafka-up:
+	docker compose -f kafka/docker-compose.yml --env-file kafka/.env up -d
+
+kafka-down:
+	docker compose -f kafka/docker-compose.yml --env-file kafka/.env down
+
+kafka-logs:
+	docker compose -f kafka/docker-compose.yml --env-file kafka/.env logs -f
+
+grafana-up:
+	docker compose -f grafana/docker-compose.yml --env-file grafana/.env up -d
+
+grafana-down:
+	docker compose -f grafana/docker-compose.yml --env-file grafana/.env down
+
+grafana-logs:
+	docker compose -f grafana/docker-compose.yml --env-file grafana/.env logs -f
+
+test-backend:
+	docker compose exec backend pytest -v
 
 install-deps: setup
 

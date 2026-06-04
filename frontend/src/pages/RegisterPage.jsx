@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PropTypes from 'prop-types'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/useAuthStore'
 import {
@@ -8,8 +9,21 @@ import {
   validatePasswordMatch,
 } from '../utils/validators'
 import { FiEye, FiEyeOff, FiMessageCircle, FiCheck, FiX } from 'react-icons/fi'
-import { FcGoogle } from 'react-icons/fc'
 import styles from '../styles/auth.module.css'
+
+function ValidationIcon({ valid, show }) {
+  if (!show) return null
+  return valid ? (
+    <span className={`${styles.inputIcon} ${styles.validIcon}`}><FiCheck size={16} /></span>
+  ) : (
+    <span className={`${styles.inputIcon} ${styles.invalidIcon}`}><FiX size={16} /></span>
+  )
+}
+
+ValidationIcon.propTypes = {
+  valid: PropTypes.bool.isRequired,
+  show: PropTypes.bool.isRequired,
+}
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -19,7 +33,7 @@ export default function RegisterPage() {
   const [showPw, setShowPw] = useState(false)
   const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
-  const { register, loginWithGoogle, isLoading, error, clearError } = useAuthStore()
+  const { register, isLoading, error, clearError } = useAuthStore()
 
   const isValid =
     validateName(name) &&
@@ -35,21 +49,6 @@ export default function RegisterPage() {
       setSuccess(true)
       setTimeout(() => navigate('/login'), 1500)
     } catch { /* error is set in store */ }
-  }
-
-  const handleGoogle = async () => {
-    clearError()
-    await loginWithGoogle()
-    navigate('/chat')
-  }
-
-  const ValidationIcon = ({ valid, show }) => {
-    if (!show) return null
-    return valid ? (
-      <span className={`${styles.inputIcon} ${styles.validIcon}`}><FiCheck size={16} /></span>
-    ) : (
-      <span className={`${styles.inputIcon} ${styles.invalidIcon}`}><FiX size={16} /></span>
-    )
   }
 
   return (
@@ -110,20 +109,20 @@ export default function RegisterPage() {
                 data-testid="register-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
-                placeholder="至少 6tower 個字元"
+                placeholder="至少 6 個字元"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
                 required
               />
-              <span
+              <button
+                type="button"
                 className={styles.inputIcon}
                 onClick={() => setShowPw(!showPw)}
-                role="button"
-                tabIndex={0}
+                aria-label={showPw ? '隱藏密碼' : '顯示密碼'}
               >
                 {showPw ? <FiEyeOff size={18} /> : <FiEye size={18} />}
-              </span>
+              </button>
             </div>
           </div>
 
@@ -135,7 +134,7 @@ export default function RegisterPage() {
                 data-testid="register-confirm-password"
                 className={styles.formInput}
                 type={showPw ? 'text' : 'password'}
-                placeholder="再次輸入密碼RegisterPage.jsx"
+                placeholder="再次輸入密碼"
                 value={confirmPw}
                 onChange={(e) => setConfirmPw(e.target.value)}
                 autoComplete="new-password"
@@ -158,18 +157,11 @@ export default function RegisterPage() {
             {isLoading ? (
               <span className={styles.btnLoading}>
                 <span className={styles.spinner} />
-                註冊中...
+                <span>註冊中...</span>
               </span>
             ) : '建立帳號'}
           </button>
         </form>
-
-        <div className={styles.divider}>或</div>
-
-        <button className={styles.googleBtn} onClick={handleGoogle} disabled={isLoading}>
-          <FcGoogle size={20} />
-          使用 Google 帳號快速註冊
-        </button>
 
         <p className={styles.switchLink}>
           已有帳號？<Link to="/login">立即登入</Link>
