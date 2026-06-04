@@ -42,5 +42,8 @@ make reset-db
 | `make watch`    | `docker compose watch`                                | 監控任何frontend & backend修改自動rebuild            |
 | `make down`     | `docker compose down`                                 | 停止並移除 containers，但保留 volumes (database) |
 | `make reset-db` | `docker compose down -v && docker compose up --build -d` | 刪除 volumes，重建資料庫並啟動服務        |
+---
+# Frontend & Backend Code Convergence
 
-
+**Main Branch:** [![codecov](https://codecov.io/gh/Cloud-Chat-System/chat-web/graph/badge.svg?token=P18Y0ZGGHI)](https://codecov.io/gh/Cloud-Chat-System/chat-web)
+**ci-and-lint Branch:** [![codecov](https://codecov.io/gh/Cloud-Chat-System/chat-web/branch/ci-and-lint/graph/badge.svg?token=P18Y0ZGGHI)](https://codecov.io/gh/Cloud-Chat-System/chat-web)
