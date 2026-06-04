@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
+import { randomBytes } from 'node:crypto'
 
 function uniqueUser(prefix) {
-  const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const id = `${Date.now()}-${randomBytes(4).toString('hex')}`
   return {
     name: `${prefix} User`,
     email: `${prefix.toLowerCase()}-${id}@example.com`,

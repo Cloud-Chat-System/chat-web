@@ -1,5 +1,7 @@
 """User search and info routes."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -12,12 +14,18 @@ from ..ws_manager import ws_manager
 
 router = APIRouter(prefix="/users", tags=["users"])
 
+DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
+SearchQuery = Annotated[str, Query(min_length=1, description="Search query")]
+
+NOT_FOUND_RESPONSE = {404: {"description": "Not found"}}
+
 
 @router.get("/search", response_model=list[UserOut])
 def search_users(
-    q: str = Query(..., min_length=1, description="Search query"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    q: SearchQuery,
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Search users by username, email, or display_name."""
     users = (
@@ -38,16 +46,16 @@ def search_users(
 
 
 @router.get("/online", response_model=list[int])
-def get_online_users(current_user: User = Depends(get_current_user)):
+def get_online_users(current_user: CurrentUser):
     """Get list of currently online user IDs (via WebSocket connections)."""
     return ws_manager.get_online_user_ids()
 
 
-@router.get("/{user_id}", response_model=UserOut)
+@router.get("/{user_id}", response_model=UserOut, responses=NOT_FOUND_RESPONSE)
 def get_user(
     user_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    current_user: CurrentUser,
+    db: DbSession,
 ):
     """Get a specific user's info."""
     user = db.query(User).filter(User.id == user_id).first()

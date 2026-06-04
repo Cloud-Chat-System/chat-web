@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import PropTypes from 'prop-types'
 import { useNavigate } from 'react-router-dom'
 import { useChatStore } from '../../store/useChatStore'
 import { useAuthStore } from '../../store/useAuthStore'
@@ -67,7 +68,7 @@ export default function Sidebar({ onSelectChat }) {
             <FiSearch className={styles.searchIcon} />
             <input
               className={styles.searchInput}
-              placeholder="搜尋 Messenger Sidebar.jsx"
+              placeholder="搜尋"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               id="search-input"
@@ -99,7 +100,8 @@ export default function Sidebar({ onSelectChat }) {
             </div>
           ) : (
             chatRooms.map((room) => (
-              <div
+              <button
+                type="button"
                 key={room.id}
                 className={`${styles.chatItem} ${activeChatId === room.id ? styles.chatItemActive : ''}`}
                 onClick={() => handleSelectChat(room)}
@@ -129,7 +131,7 @@ export default function Sidebar({ onSelectChat }) {
                     )}
                   </div>
                 </div>
-              </div>
+              </button>
             ))
           )}
         </div>
@@ -158,4 +160,8 @@ export default function Sidebar({ onSelectChat }) {
       {showNewChat && <NewChatModal onClose={() => setShowNewChat(false)} />}
     </>
   )
+}
+
+Sidebar.propTypes = {
+  onSelectChat: PropTypes.func,
 }

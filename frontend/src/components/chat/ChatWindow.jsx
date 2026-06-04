@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
+import PropTypes from 'prop-types'
 import { useChatStore } from '../../store/useChatStore'
 import { useAuthStore } from '../../store/useAuthStore'
 import { formatMessageTime, formatDateDivider, shouldShowDateDivider } from '../../utils/formatTime'
@@ -92,7 +93,7 @@ export default function ChatWindow({ onBack }) {
             <div className={chatStyles.chatHeaderName} data-testid="active-chat-name">{activeRoom.name}</div>
             {!activeRoom.isGroup && (
               <div
-                className={`${chatStyles.chatHeaderStatus} ${!isOnline ? chatStyles.chatHeaderOffline : ''
+                className={`${chatStyles.chatHeaderStatus} ${isOnline ? '' : chatStyles.chatHeaderOffline
                   }`}
               >
                 <span className={chatStyles.chatHeaderStatusDot} />
@@ -198,4 +199,8 @@ export default function ChatWindow({ onBack }) {
       </div>
     </div>
   )
+}
+
+ChatWindow.propTypes = {
+  onBack: PropTypes.func,
 }

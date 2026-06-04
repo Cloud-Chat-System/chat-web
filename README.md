@@ -12,7 +12,7 @@ docker compose watch
 #關掉docker
 docker compose down
 ```
-訪問website : http://140.114.91.23:3000/ 確認frontend有成功連接到backend & database
+訪問website : http://localhost:3000/ 確認frontend有成功連接到backend & database
 
 # 查看databse中已經存放的資料
 ```bash

@@ -19,15 +19,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class GoogleLoginRequest(BaseModel):
+    email: EmailStr
+    name: str = Field(..., min_length=1)
+
+
 class AuthResponse(BaseModel):
     token: str
     user: "UserOut"
-
-
-class GoogleLoginRequest(BaseModel):
-    """Simulated Google login — in production, this would be an OAuth code exchange."""
-    email: EmailStr
-    name: str
 
 
 # ── User ──────────────────────────────────────────────

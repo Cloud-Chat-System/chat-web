@@ -14,6 +14,8 @@ for file in "$@"; do
         frontend/*)
             set -- "$@" "${file#frontend/}"
             ;;
+        *)
+            ;;
     esac
 done
 

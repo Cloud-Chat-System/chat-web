@@ -1,0 +1,25 @@
+{
+  "scenarioName": "steady-state-throughput-and-online-users",
+  "topic": "chat.events",
+  "partitions": 12,
+  "replicationFactor": 1,
+  "bootstrapServer": "kafka:9092",
+  "messageSizeBytes": 512,
+  "producerCount": 1,
+  "stageDurationSeconds": 60,
+  "stageRatesPerSecond": [100, 250, 500, 750, 1000],
+  "targetMessageRatePerSecond": 1000,
+  "targetConcurrentOnlineUsers": 100000,
+  "observedOnlineUsersPerVm": 0,
+  "acks": "1",
+  "compressionType": "none",
+  "batchSize": 32768,
+  "lingerMs": 5,
+  "throughputPassRatio": 0.9,
+  "safetyFactor": 0.7,
+  "notes": [
+    "Use this file as the single source of truth for staged Kafka load targets.",
+    "Increase stageRatesPerSecond gradually to find the local or VM ceiling before extrapolating to production scale.",
+    "Set observedOnlineUsersPerVm after a separate websocket or gateway soak test if you also want the runner to estimate app-tier VM count."
+  ]
+}

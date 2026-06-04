@@ -1,0 +1,92 @@
+services:
+  kafka:
+    image: bitnamilegacy/kafka:3.7.0
+    container_name: chat_kafka
+    ports:
+      - "${KAFKA_EXTERNAL_PORT}:9094"
+    environment:
+      KAFKA_KRAFT_CLUSTER_ID: ${KAFKA_CLUSTER_ID}
+      KAFKA_CFG_NODE_ID: ${KAFKA_BROKER_ID}
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:${KAFKA_INTERNAL_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT},EXTERNAL://:9094
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:${KAFKA_INTERNAL_PORT},EXTERNAL://${KAFKA_ADVERTISED_HOST}:${KAFKA_EXTERNAL_PORT}
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: ${KAFKA_BROKER_ID}@kafka:${KAFKA_CONTROLLER_PORT}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    networks:
+      default: {}
+      chat_web_shared:
+        aliases:
+          - kafka
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    container_name: chat_kafka_ui
+    depends_on:
+      - kafka
+    ports:
+      - "${KAFKA_UI_PORT}:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: chat-web
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:${KAFKA_INTERNAL_PORT}
+      KAFKA_CLUSTERS_0_READONLY: "false"
+    networks:
+      default: {}
+      chat_web_shared:
+        aliases:
+          - kafka-ui
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.7.0
+    container_name: chat_kafka_exporter
+    depends_on:
+      - kafka
+    restart: unless-stopped
+    command:
+      - --kafka.server=kafka:${KAFKA_INTERNAL_PORT}
+      - --topic.filter=.*
+      - --group.filter=.*
+    ports:
+      - "${KAFKA_EXPORTER_PORT}:9308"
+    networks:
+      default: {}
+      chat_web_shared:
+        aliases:
+          - kafka-exporter
+
+  mock-slow-consumer:
+    image: bitnamilegacy/kafka:3.7.0
+    depends_on:
+      - kafka
+    profiles:
+      - consumer-demo
+    environment:
+      KAFKA_BOOTSTRAP_SERVER: kafka:${KAFKA_INTERNAL_PORT}
+      KAFKA_TOPIC: ${KAFKA_TOPIC_CHAT_EVENTS}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_MOCK_CONSUMER_GROUP:-mock-slow-consumer}
+      KAFKA_CONSUME_DELAY_SECONDS: ${KAFKA_MOCK_CONSUME_DELAY_SECONDS:-0}
+      KAFKA_MAX_POLL_RECORDS: ${KAFKA_MOCK_MAX_POLL_RECORDS:-500}
+      KAFKA_LOG_EVERY_N: ${KAFKA_MOCK_LOG_EVERY_N:-10000}
+      KAFKA_AUTO_OFFSET_RESET: ${KAFKA_MOCK_AUTO_OFFSET_RESET:-earliest}
+    command:
+      - /bin/bash
+      - /scripts/mock_slow_consumer.sh
+    volumes:
+      - ./scripts:/scripts:ro
+    networks:
+      default: {}
+      chat_web_shared:
+        aliases:
+          - mock-slow-consumer
+
+volumes:
+  kafka_data:
+
+networks:
+  chat_web_shared:
+    external: true
+    name: chat-web_default

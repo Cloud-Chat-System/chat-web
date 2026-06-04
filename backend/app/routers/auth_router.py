@@ -1,4 +1,6 @@
-"""Authentication routes: register, login, Google OAuth (simulated), and current user."""
+"""Authentication routes: register, login, and current user."""
+
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -10,9 +12,27 @@ from ..auth import hash_password, verify_password, create_token, get_current_use
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+DbSession = Annotated[Session, Depends(get_db)]
+CurrentUser = Annotated[User, Depends(get_current_user)]
 
-@router.post("/register", status_code=status.HTTP_201_CREATED)
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+BAD_REQUEST_RESPONSE = {400: {"description": "Bad request"}}
+UNAUTHORIZED_RESPONSE = {401: {"description": "Unauthorized"}}
+
+
+def _ensure_presence(db: Session, user: User, status_value: str) -> None:
+    presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
+    if presence:
+        presence.status = status_value
+        return
+    db.add(UserPresence(user_id=user.id, status=status_value))
+
+
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    responses=BAD_REQUEST_RESPONSE,
+)
+def register(req: RegisterRequest, db: DbSession):
     """Register a new user with bcrypt-hashed password."""
     # Check if email already exists
     if db.query(User).filter(User.email == req.email).first():
@@ -33,16 +53,14 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    # Create presence record
-    presence = UserPresence(user_id=user.id, status="offline")
-    db.add(presence)
+    _ensure_presence(db, user, "offline")
     db.commit()
 
     return {"message": "註冊成功", "user_id": user.id}
 
 
-@router.post("/login", response_model=AuthResponse)
-def login(req: LoginRequest, db: Session = Depends(get_db)):
+@router.post("/login", response_model=AuthResponse, responses=UNAUTHORIZED_RESPONSE)
+def login(req: LoginRequest, db: DbSession):
     """Login with email and password, returns JWT token."""
     user = db.query(User).filter(User.email == req.email).first()
     if not user or not user.password_hash:
@@ -53,10 +71,7 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
     token = create_token(user.id, user.email, user.token_version)
 
-    # Update presence to online
-    presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
-    if presence:
-        presence.status = "online"
+    _ensure_presence(db, user, "online")
     db.commit()
     db.refresh(user)
 
@@ -67,49 +82,37 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/google", response_model=AuthResponse)
-def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
-    """
-    Simulated Google OAuth login.
-    In production, this would exchange an authorization code for user info.
-    For now, it accepts email + name directly and creates/logs in the user.
-    """
+def google_login(req: GoogleLoginRequest, db: DbSession):
+    """Create or reuse a Google-backed account and return a JWT token."""
     user = db.query(User).filter(User.email == req.email).first()
-
-    if not user:
-        # Auto-create account for Google users
-        username = req.email.split("@")[0]
-        # Ensure unique username
-        base_username = username
-        counter = 1
+    if user is None:
+        username_base = req.email.split("@", 1)[0]
+        username = username_base
+        suffix = 1
         while db.query(User).filter(User.username == username).first():
-            username = f"{base_username}_{counter}"
-            counter += 1
+            suffix += 1
+            username = f"{username_base}{suffix}"
 
         user = User(
             username=username,
             email=req.email,
+            password_hash=None,
             display_name=req.name,
             auth_provider="google",
-            password_hash=None,  # No password for OAuth users
+            provider_user_id=req.email,
         )
         db.add(user)
         db.commit()
         db.refresh(user)
+    elif user.auth_provider != "google":
+        user.auth_provider = "google"
+        user.provider_user_id = user.provider_user_id or req.email
 
-        # Create presence record
-        presence = UserPresence(user_id=user.id, status="online")
-        db.add(presence)
-        db.commit()
-    else:
-        # Update presence to online
-        presence = db.query(UserPresence).filter(UserPresence.user_id == user.id).first()
-        if presence:
-            presence.status = "online"
-        db.commit()
-        db.refresh(user)
+    _ensure_presence(db, user, "online")
+    db.commit()
+    db.refresh(user)
 
     token = create_token(user.id, user.email, user.token_version)
-
     return AuthResponse(
         token=token,
         user=UserOut.model_validate(user),
@@ -117,17 +120,15 @@ def google_login(req: GoogleLoginRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserOut)
-def get_me(current_user: User = Depends(get_current_user)):
+def get_me(current_user: CurrentUser):
     """Get current logged-in user info (requires JWT)."""
     return UserOut.model_validate(current_user)
 
 
 @router.post("/logout")
-def logout(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def logout(current_user: CurrentUser, db: DbSession):
     """Logout: set user presence to offline."""
-    presence = db.query(UserPresence).filter(UserPresence.user_id == current_user.id).first()
-    if presence:
-        presence.status = "offline"
+    _ensure_presence(db, current_user, "offline")
     current_user.token_version += 1
     db.commit()
     return {"message": "已登出"}
