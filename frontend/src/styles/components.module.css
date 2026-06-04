@@ -12,7 +12,7 @@
   font-weight: 600;
   color: #fff;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
   user-select: none;
 }
 
@@ -39,6 +39,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: var(--radius-full);
+  overflow: hidden;
 }
 
 /* Avatar gradient backgrounds based on name hash */
@@ -54,14 +55,15 @@
 /* Online Dot */
 .onlineDot {
   position: absolute;
-  bottom: 0;
-  right: 0;
+  bottom: -2px;
+  right: -2px;
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background: var(--online-color);
   border: 2.5px solid var(--bg-sidebar);
   z-index: 2;
+  pointer-events: none;
 }
 
 .onlineDotSmall {
