@@ -35,6 +35,9 @@ jobs:
 
   frontend-lint-test-and-build:
     runs-on: ubuntu-latest
+    env:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_WS_URL: ws://localhost:8000/ws
 
     steps:
       - name: Checkout
@@ -55,9 +58,16 @@ jobs:
         run: npm run lint
         working-directory: frontend
 
-      - name: Test frontend
-        run: npm run test
+      - name: Test frontend with coverage
+        run: npm run test:coverage
         working-directory: frontend
+
+      - name: Upload frontend coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
 
       - name: Build frontend
         run: npm run build

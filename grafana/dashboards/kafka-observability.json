@@ -48,7 +48,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 6,
         "x": 0,
         "y": 0
@@ -69,11 +69,11 @@
       },
       "targets": [
         {
-          "expr": "max(up{job=\"chat-backend\"})",
+          "expr": "max(up{job=\"kafka-exporter\"})",
           "refId": "A"
         }
       ],
-      "title": "Backend Scrape Status",
+      "title": "Kafka Exporter Scrape Status",
       "type": "stat"
     },
     {
@@ -83,12 +83,12 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "ops"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 6,
         "x": 6,
         "y": 0
@@ -105,11 +105,11 @@
       },
       "targets": [
         {
-          "expr": "sum(irate(chat_web_http_requests_total{path!=\"/metrics\"}[1m]))",
+          "expr": "sum(rate(kafka_topic_partition_current_offset{topic=\"$topic\"}[1m]))",
           "refId": "A"
         }
       ],
-      "title": "Backend Request Rate",
+      "title": "Producer Rate",
       "type": "stat"
     },
     {
@@ -119,12 +119,12 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "s"
+          "unit": "ops"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 6,
         "x": 12,
         "y": 0
@@ -141,11 +141,11 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(chat_web_http_request_duration_seconds_bucket{path!=\"/metrics\"}[5m])))",
+          "expr": "clamp_min(rate(kafka_consumergroup_current_offset_sum{consumergroup=\"$group\",topic=\"$topic\"}[1m]), 0)",
           "refId": "A"
         }
       ],
-      "title": "Backend p95 Latency",
+      "title": "Consumer Rate",
       "type": "stat"
     },
     {
@@ -160,7 +160,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 6,
         "w": 6,
         "x": 18,
         "y": 0
@@ -177,11 +177,11 @@
       },
       "targets": [
         {
-          "expr": "chat_web_websocket_connections_active",
+          "expr": "sum(kafka_consumergroup_lag{consumergroup=\"$group\",topic=\"$topic\"})",
           "refId": "A"
         }
       ],
-      "title": "Active WebSocket Connections",
+      "title": "Consumer Lag",
       "type": "stat"
     },
     {
@@ -191,7 +191,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "ops"
         },
         "overrides": []
       },
@@ -199,73 +199,22 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 6
       },
       "id": 5,
       "targets": [
         {
-          "expr": "sum by (path, method) (irate(chat_web_http_requests_total{method!=\"OPTIONS\",path!=\"/metrics\"}[1m]))",
-          "legendFormat": "{{method}} {{path}}",
+          "expr": "sum by (topic) (rate(kafka_topic_partition_current_offset{topic=\"$topic\"}[1m]))",
+          "legendFormat": "producer {{topic}}",
           "refId": "A"
-        }
-      ],
-      "title": "HTTP Throughput by Route",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 12,
-        "y": 7
-      },
-      "id": 6,
-      "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, path) (rate(chat_web_http_request_duration_seconds_bucket{path!=\"/metrics\"}[5m])))",
-          "legendFormat": "{{path}}",
-          "refId": "A"
+          "expr": "clamp_min(rate(kafka_consumergroup_current_offset_sum{consumergroup=\"$group\",topic=\"$topic\"}[1m]), 0)",
+          "legendFormat": "consumer {{topic}}",
+          "refId": "B"
         }
       ],
-      "title": "HTTP p95 by Route",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "id": 9,
-      "targets": [
-        {
-          "expr": "sum by (path) (irate(chat_web_http_requests_total{method=\"OPTIONS\",path!=\"/metrics\"}[1m]))",
-          "legendFormat": "OPTIONS {{path}}",
-          "refId": "A"
-        }
-      ],
-      "title": "HTTP Preflight Requests",
+      "title": "Producer vs Consumer Rate",
       "type": "timeseries"
     },
     {
@@ -283,16 +232,17 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 6
       },
-      "id": 7,
+      "id": 6,
       "targets": [
         {
-          "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[5m]))",
+          "expr": "sum by (partition) (kafka_consumergroup_lag{consumergroup=\"$group\",topic=\"$topic\"})",
+          "legendFormat": "partition {{partition}}",
           "refId": "A"
         }
       ],
-      "title": "Container CPU Rate",
+      "title": "Lag by Partition",
       "type": "timeseries"
     },
     {
@@ -302,7 +252,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -310,29 +260,108 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 15
+      },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(kafka_topic_partition_current_offset{topic=\"$topic\"}) - sum(kafka_consumergroup_current_offset{consumergroup=\"$group\",topic=\"$topic\"})",
+          "legendFormat": "backlog",
+          "refId": "A"
+        }
+      ],
+      "title": "Backlog",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 15
       },
       "id": 8,
       "targets": [
         {
-          "expr": "sum(container_memory_working_set_bytes{name!=\"\"})",
+          "expr": "sum(kafka_topic_partition_current_offset{topic=\"$topic\"})",
+          "legendFormat": "topic end offset",
           "refId": "A"
+        },
+        {
+          "expr": "sum(kafka_consumergroup_current_offset{consumergroup=\"$group\",topic=\"$topic\"})",
+          "legendFormat": "consumer committed offset",
+          "refId": "B"
         }
       ],
-      "title": "Container Memory Working Set",
+      "title": "Produced vs Consumed Offsets",
       "type": "timeseries"
     }
   ],
-  "refresh": "10s",
+  "refresh": "5s",
   "schemaVersion": 39,
   "style": "dark",
   "tags": [
     "chat-web",
-    "system",
-    "backend"
+    "kafka",
+    "observability"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": true,
+          "text": "chat.events",
+          "value": "chat.events"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Topic",
+        "multi": false,
+        "name": "topic",
+        "options": [
+          {
+            "selected": true,
+            "text": "chat.events",
+            "value": "chat.events"
+          }
+        ],
+        "query": "chat.events",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": "mock-slow-consumer",
+          "value": "mock-slow-consumer"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Consumer Group",
+        "multi": false,
+        "name": "group",
+        "options": [
+          {
+            "selected": true,
+            "text": "mock-slow-consumer",
+            "value": "mock-slow-consumer"
+          }
+        ],
+        "query": "mock-slow-consumer",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
   },
   "time": {
     "from": "now-30m",
@@ -340,8 +369,8 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "Chat Web Minimal Observability",
-  "uid": "chat-web-system-overview",
-  "version": 3,
+  "title": "Kafka Producer Consumer Lag",
+  "uid": "chat-web-kafka-observability",
+  "version": 1,
   "weekStart": ""
 }

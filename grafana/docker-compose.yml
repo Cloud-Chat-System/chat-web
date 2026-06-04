@@ -1,16 +1,17 @@
 services:
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.55.0
     container_name: chat_prometheus
     ports:
       - "${PROMETHEUS_PORT}:9090"
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    networks:
+      - default
+      - chat_web_shared
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.3.0
     container_name: chat_grafana
     depends_on:
       - prometheus
@@ -25,7 +26,7 @@ services:
       - grafana_data:/var/lib/grafana
 
   node-exporter:
-    image: prom/node-exporter:latest
+    image: prom/node-exporter:v1.8.2
     container_name: chat_node_exporter
     ports:
       - "${NODE_EXPORTER_PORT}:9100"
@@ -43,3 +44,8 @@ services:
 
 volumes:
   grafana_data:
+
+networks:
+  chat_web_shared:
+    external: true
+    name: chat-web_default
