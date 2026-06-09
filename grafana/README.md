@@ -9,6 +9,7 @@ This directory is the shared workspace for Prometheus and Grafana monitoring.
 - Dashboard provisioning for the chat-web project
 - Backend request and WebSocket metrics for pressure testing
 - Kafka producer, consumer, lag, and backlog metrics
+- PostgreSQL activity and throughput metrics during pressure tests
 
 ## Quick start
 
@@ -21,7 +22,7 @@ This directory is the shared workspace for Prometheus and Grafana monitoring.
 ## What is included
 
 - `docker-compose.yml`
-  Prometheus, Grafana, Node Exporter, and cAdvisor
+  Prometheus, Grafana, PostgreSQL Exporter, Node Exporter, and cAdvisor
 - `prometheus/prometheus.yml`
   Initial scrape targets
 - `provisioning/`
@@ -30,6 +31,8 @@ This directory is the shared workspace for Prometheus and Grafana monitoring.
   Minimal dashboard for backend, WebSocket, and container signals
 - `dashboards/kafka-observability.json`
   Kafka producer, consumer, lag, and backlog dashboard
+- `dashboards/system-overview.json`
+  Also includes PostgreSQL scrape status, active connections, TPS, cache hit ratio, and row-change activity
 
 ## Recommended startup order
 
@@ -50,7 +53,7 @@ That network is created when the base `chat-web` stack starts.
    `docker compose -f grafana/docker-compose.yml --env-file grafana/.env up -d`
 4. Open Prometheus:
    `http://localhost:9090/targets`
-5. Confirm `prometheus`, `chat-backend`, `node-exporter`, and `cadvisor` are `UP`
+5. Confirm `prometheus`, `chat-backend`, `postgres-exporter`, `node-exporter`, and `cadvisor` are `UP`
 6. Open Grafana:
    `http://localhost:3001`
 7. Sign in with the values from `grafana/.env`
@@ -63,6 +66,9 @@ That network is created when the base `chat-web` stack starts.
    - `Backend Request Rate`
    - `Backend p95 Latency`
    - `Active WebSocket Connections`
+   - `Postgres Active Connections`
+   - `Postgres Transactions Per Second`
+   - `Postgres Rows Changed Per Second`
    - `Container CPU Rate`
    - `Container Memory Working Set`
 
@@ -81,15 +87,20 @@ That network is created when the base `chat-web` stack starts.
 6. Confirm Prometheus targets are `UP` at `http://localhost:9090/targets`
    - `chat-backend`
    - `kafka-exporter`
+   - `postgres-exporter`
 7. Open Grafana and load `Kafka Producer Consumer Lag`
 8. Run the Kafka load test:
    `python kafka/scripts/run_kafka_load_test.py --profile kafka/load-profile.example.json`
-9. Watch these panels:
+9. Watch these panels together with the DB panels from `Chat Web Minimal Observability`:
    - `Producer Rate`
    - `Consumer Rate`
    - `Consumer Lag`
    - `Backlog`
    - `Produced vs Consumed Offsets`
+   - `Postgres Active Connections`
+   - `Postgres Transactions Per Second`
+   - `Postgres Rows Changed Per Second`
+   - `Postgres Cache Hit Ratio`
 
 ## Route-level interpretation
 
