@@ -138,6 +138,7 @@ async def wait_for_backend(base_url: str, timeout_seconds: int) -> None:
                 if response.status_code == 200:
                     return
             except httpx.HTTPError:
+                # Backend may not be reachable yet during startup; keep polling until timeout.
                 pass
             await asyncio.sleep(1)
     raise RuntimeError(f"Backend did not become ready within {timeout_seconds}s")
