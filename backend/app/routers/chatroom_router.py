@@ -1,14 +1,23 @@
 """Chat room and message routes."""
 
+import asyncio
 from datetime import datetime, timezone
 from typing import Annotated
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
+from ..config import (
+    KAFKA_MESSAGE_FLOW_ENABLED,
+    KAFKA_PERSIST_POLL_INTERVAL_SECONDS,
+    KAFKA_PERSIST_TIMEOUT_SECONDS,
+)
 from ..database import get_db
+from ..kafka_producer import publish_message_event
+from ..message_service import build_message_out, find_persisted_message, persist_message_event
 from ..models import ChatRoom, ChatRoomMember, Message, User
 from ..schemas import (
     ChatRoomCreate,
@@ -315,35 +324,33 @@ async def send_message(
     if not membership:
         raise HTTPException(status_code=403, detail=NON_MEMBER_DETAIL)
 
-    # Create message
-    message = Message(
-        room_id=room_id,
-        sender_id=current_user.id,
-        content=req.content,
-        message_type="text",
-    )
-    db.add(message)
+    event = {
+        "event_id": uuid4().hex,
+        "room_id": room_id,
+        "sender_id": current_user.id,
+        "content": req.content,
+        "message_type": "text",
+    }
 
-    # Update room's last_message_at
-    room = db.query(ChatRoom).filter(ChatRoom.id == room_id).first()
-    if room:
-        room.last_message_at = datetime.now(timezone.utc)
+    if KAFKA_MESSAGE_FLOW_ENABLED:
+        try:
+            publish_message_event(event)
+            deadline = asyncio.get_running_loop().time() + KAFKA_PERSIST_TIMEOUT_SECONDS
+            message = None
+            while asyncio.get_running_loop().time() < deadline:
+                db.expire_all()
+                message = find_persisted_message(db, event)
+                if message:
+                    break
+                await asyncio.sleep(KAFKA_PERSIST_POLL_INTERVAL_SECONDS)
+            if message is None:
+                raise TimeoutError("Timed out waiting for Kafka consumer persistence.")
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"Kafka message flow unavailable: {exc}") from exc
+    else:
+        message = persist_message_event(db, event)
 
-    # Update sender's last_read_at
-    membership.last_read_at = datetime.now(timezone.utc)
-
-    db.commit()
-    db.refresh(message)
-
-    msg_out = MessageOut(
-        id=message.id,
-        room_id=message.room_id,
-        sender_id=message.sender_id,
-        content=message.content,
-        message_type=message.message_type,
-        created_at=message.created_at,
-        sender_name=current_user.display_name or current_user.username,
-    )
+    msg_out = build_message_out(db, message)
 
     # Broadcast via WebSocket to all room members
     member_ids = _get_room_member_ids(db, room_id)

@@ -18,6 +18,8 @@ This directory is the shared workspace for Kafka-related performance work.
   Staged load profile for ramp-up testing
 - `scripts/run_kafka_load_test.py`
   Staged Kafka producer load-test runner
+- `scripts/run_backend_message_burst_test.py`
+  End-to-end backend burst runner that separates setup from the measured message-send phase
 - `scripts/mock_slow_consumer.sh`
   Configurable mock consumer for fast capacity tests or slow lag demos
 - `scripts/ws-online-users-template.js`
@@ -34,6 +36,43 @@ It runs `kafka-producer-perf-test.sh` inside the Kafka container and:
 3. Stops when a stage cannot sustain the configured throughput threshold
 4. Writes a JSON report under `kafka/reports/`
 5. Estimates required Kafka VM count using the best sustainable throughput observed on the current machine
+
+For end-to-end message pressure tests, use the backend burst runner instead.
+The Docker app stack now routes `POST /chatrooms/{room_id}/messages` through Kafka:
+
+```text
+client -> backend API -> Kafka -> backend-consumer -> PostgreSQL
+```
+
+In the current demo-safe mode, the message API publishes to Kafka and waits for
+`backend-consumer` to persist the message before returning the saved response.
+This keeps the existing frontend behavior stable, but it also means API
+throughput is limited by end-to-end Kafka consumer and PostgreSQL persistence.
+
+Run this when you want producer, consumer, backend, and DB Grafana panels to move together:
+
+```bash
+python kafka/scripts/run_backend_message_burst_test.py \
+  --base-url http://127.0.0.1:8000 \
+  --users 1000 \
+  --rooms 1000 \
+  --messages-per-room 1 \
+  --persistence-samples 50 \
+  --prepare-concurrency 100 \
+  --burst-concurrency 1000 \
+  --request-timeout 60
+```
+
+This runner separates the setup work from the measured burst:
+
+```text
+prepare phase: register -> login -> create rooms
+message burst phase: send messages only
+```
+
+The report includes `sendMessageRequestsPerSecond`, which represents the
+end-to-end completed message throughput for the current synchronous persistence
+mode.
 
 This is useful when local or VM resources are limited and you want a safe way to find the ceiling gradually.
 

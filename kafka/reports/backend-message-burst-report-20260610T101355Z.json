@@ -1,0 +1,72 @@
+{
+  "generatedAtUtc": "20260610T101355Z",
+  "scenario": "backend-message-burst",
+  "baseUrl": "http://127.0.0.1:8000",
+  "users": 1000,
+  "rooms": 1000,
+  "roomType": "direct",
+  "messagesPerRoom": 1,
+  "prepareConcurrency": 100,
+  "burstConcurrency": 1000,
+  "sendMessageRequestsPerSecond": 55.54029431636451,
+  "sendMessageCount": 1000,
+  "sendMessageWallSeconds": 18.00494600017555,
+  "persistenceFailures": 0,
+  "phases": [
+    {
+      "name": "register",
+      "count": 1000,
+      "wall_seconds": 19.730388200143352,
+      "requests_per_second": 50.68323997764699,
+      "p50_ms": 1887.5238500768319,
+      "p95_ms": 2527.1129000466317,
+      "p99_ms": 2828.711000038311,
+      "max_ms": 3656.110200099647,
+      "errors": 0
+    },
+    {
+      "name": "login",
+      "count": 1000,
+      "wall_seconds": 20.480706800008193,
+      "requests_per_second": 48.826439915618536,
+      "p50_ms": 1963.4827498812228,
+      "p95_ms": 2559.0033000335097,
+      "p99_ms": 2783.5301000159234,
+      "max_ms": 3101.204600185156,
+      "errors": 0
+    },
+    {
+      "name": "create_room",
+      "count": 1000,
+      "wall_seconds": 20.689786599949002,
+      "requests_per_second": 48.33302630595836,
+      "p50_ms": 2039.534299983643,
+      "p95_ms": 2334.8256000317633,
+      "p99_ms": 2470.7474999595433,
+      "max_ms": 2571.8366000801325,
+      "errors": 0
+    },
+    {
+      "name": "send_message_burst",
+      "count": 1000,
+      "wall_seconds": 18.00494600017555,
+      "requests_per_second": 55.54029431636451,
+      "p50_ms": 10613.747749943286,
+      "p95_ms": 16599.996800068766,
+      "p99_ms": 17124.561399919912,
+      "max_ms": 17136.65229990147,
+      "errors": 0
+    },
+    {
+      "name": "verify_persist",
+      "count": 50,
+      "wall_seconds": 2.5829823999665678,
+      "requests_per_second": 19.35746832833517,
+      "p50_ms": 52.00365011114627,
+      "p95_ms": 55.76600017957389,
+      "p99_ms": 60.01239991746843,
+      "max_ms": 60.01239991746843,
+      "errors": 0
+    }
+  ]
+}
