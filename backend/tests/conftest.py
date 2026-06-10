@@ -10,6 +10,14 @@ from fastapi.testclient import TestClient
 ROOT = Path(__file__).resolve().parents[1]
 BACKEND_ROOT = ROOT
 TEST_DB_PATH = ROOT / "tests" / "requirements_test.db"
+TEST_TABLES = (
+    "notifications",
+    "messages",
+    "chat_room_members",
+    "chat_rooms",
+    "user_presence",
+    "users",
+)
 
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
@@ -25,6 +33,21 @@ from app.main import app
 from app.models import ChatRoomMember, User, UserPresence
 from app.sql_scripts import apply_init_schema
 from app.ws_manager import ws_manager
+
+
+def clear_test_database() -> None:
+    """Clear data without deleting the SQLite file between tests."""
+    with engine.begin() as connection:
+        if engine.dialect.name == "sqlite":
+            connection.exec_driver_sql("PRAGMA foreign_keys = OFF")
+
+        for table in TEST_TABLES:
+            connection.exec_driver_sql(f"DELETE FROM {table}")
+
+        if engine.dialect.name == "sqlite":
+            table_names = ", ".join(f"'{table}'" for table in TEST_TABLES)
+            connection.exec_driver_sql(f"DELETE FROM sqlite_sequence WHERE name IN ({table_names})")
+            connection.exec_driver_sql("PRAGMA foreign_keys = ON")
 
 
 class BackendTestHelper:
@@ -122,13 +145,10 @@ def reset_database(request):
         return
 
     ws_manager.active_connections.clear()
-    engine.dispose()
-    if TEST_DB_PATH.exists():
-        TEST_DB_PATH.unlink()
     apply_init_schema(target_engine=engine)
+    clear_test_database()
     yield
     ws_manager.active_connections.clear()
-    engine.dispose()
 
  
 @pytest.fixture
