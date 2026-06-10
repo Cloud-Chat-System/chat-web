@@ -132,7 +132,7 @@ test-e2e:
 		fi; \
 		sleep 2; \
 	done
-	docker compose up --build -d backend
+	KAFKA_MESSAGE_FLOW_ENABLED=false docker compose up --build -d backend
 	@status=0; npm run test:e2e || status=$$?; docker compose down; exit $$status
 
 test-e2e-ui:

@@ -18,6 +18,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB_PATH}"
 os.environ["JWT_SECRET"] = "requirements-test-secret"
 os.environ["JWT_ALGORITHM"] = "HS256"
 os.environ["JWT_EXPIRE_HOURS"] = "24"
+os.environ["KAFKA_MESSAGE_FLOW_ENABLED"] = "false"
 
 from app.database import SessionLocal, engine
 from app.main import app
