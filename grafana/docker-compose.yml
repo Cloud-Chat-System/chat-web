@@ -25,19 +25,6 @@ services:
       - default
       - chat_web_shared
 
-  postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
-    container_name: chat_postgres_exporter
-    depends_on:
-      - prometheus
-    environment:
-      DATA_SOURCE_NAME: ${POSTGRES_EXPORTER_DATA_SOURCE_NAME}
-    ports:
-      - "${POSTGRES_EXPORTER_PORT}:9187"
-    networks:
-      - default
-      - chat_web_shared
-
   node-exporter:
     image: prom/node-exporter:v1.8.2
     container_name: chat_node_exporter

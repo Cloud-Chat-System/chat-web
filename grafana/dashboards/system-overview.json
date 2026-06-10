@@ -48,8 +48,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 4,
+        "h": 7,
+        "w": 6,
         "x": 0,
         "y": 0
       },
@@ -83,70 +83,14 @@
       },
       "fieldConfig": {
         "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "red",
-                  "text": "Down"
-                },
-                "1": {
-                  "color": "green",
-                  "text": "Up"
-                }
-              },
-              "type": "value"
-            }
-          ],
-          "max": 1,
-          "min": 0
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 4,
-        "y": 0
-      },
-      "id": 10,
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "center",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "targets": [
-        {
-          "expr": "max(pg_up{job=\"postgres-exporter\",datname=\"chat_app\"})",
-          "refId": "A"
-        }
-      ],
-      "title": "Postgres Scrape Status",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
           "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 8,
+        "h": 7,
+        "w": 6,
+        "x": 6,
         "y": 0
       },
       "id": 2,
@@ -180,8 +124,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 4,
+        "h": 7,
+        "w": 6,
         "x": 12,
         "y": 0
       },
@@ -216,9 +160,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 16,
+        "h": 7,
+        "w": 6,
+        "x": 18,
         "y": 0
       },
       "id": 4,
@@ -247,51 +191,15 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 4,
-        "x": 20,
-        "y": 0
-      },
-      "id": 11,
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        }
-      },
-      "targets": [
-        {
-          "expr": "max(pg_stat_database_numbackends{job=\"postgres-exporter\",datname=\"chat_app\"})",
-          "refId": "A"
-        }
-      ],
-      "title": "Postgres Active Connections",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
           "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 6
+        "y": 7
       },
       "id": 5,
       "targets": [
@@ -317,9 +225,9 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
-        "x": 8,
-        "y": 6
+        "w": 12,
+        "x": 12,
+        "y": 7
       },
       "id": 6,
       "targets": [
@@ -339,43 +247,15 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "cps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 6
-      },
-      "id": 12,
-      "targets": [
-        {
-          "expr": "sum(rate(pg_stat_database_xact_commit{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]) + rate(pg_stat_database_xact_rollback{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
-          "legendFormat": "transactions",
-          "refId": "A"
-        }
-      ],
-      "title": "Postgres Transactions Per Second",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
           "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
+        "w": 12,
         "x": 0,
-        "y": 15
+        "y": 16
       },
       "id": 9,
       "targets": [
@@ -395,111 +275,15 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
-          "max": 1,
-          "min": 0
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 8,
-        "y": 15
-      },
-      "id": 13,
-      "targets": [
-        {
-          "expr": "sum(rate(pg_stat_database_blks_hit{job=\"postgres-exporter\",datname=\"chat_app\"}[5m])) / clamp_min(sum(rate(pg_stat_database_blks_hit{job=\"postgres-exporter\",datname=\"chat_app\"}[5m])) + sum(rate(pg_stat_database_blks_read{job=\"postgres-exporter\",datname=\"chat_app\"}[5m])), 1)",
-          "legendFormat": "cache hit ratio",
-          "refId": "A"
-        }
-      ],
-      "title": "Postgres Cache Hit Ratio",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 15
-      },
-      "id": 14,
-      "targets": [
-        {
-          "expr": "sum(rate(pg_stat_database_tup_inserted{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
-          "legendFormat": "insert",
-          "refId": "A"
-        },
-        {
-          "expr": "sum(rate(pg_stat_database_tup_updated{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
-          "legendFormat": "update",
-          "refId": "B"
-        },
-        {
-          "expr": "sum(rate(pg_stat_database_tup_deleted{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
-          "legendFormat": "delete",
-          "refId": "C"
-        }
-      ],
-      "title": "Postgres Rows Changed Per Second",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
           "unit": "short"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
-        "x": 0,
-        "y": 24
-      },
-      "id": 15,
-      "targets": [
-        {
-          "expr": "sum by (state) (pg_stat_activity_count{job=\"postgres-exporter\",datname=\"chat_app\"})",
-          "legendFormat": "{{state}}",
-          "refId": "A"
-        }
-      ],
-      "title": "Postgres Sessions by State",
-      "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 8,
-        "y": 24
+        "w": 12,
+        "x": 12,
+        "y": 16
       },
       "id": 7,
       "targets": [
@@ -524,9 +308,9 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 24
+        "w": 12,
+        "x": 0,
+        "y": 25
       },
       "id": 8,
       "targets": [
@@ -545,8 +329,7 @@
   "tags": [
     "chat-web",
     "system",
-    "backend",
-    "postgres"
+    "backend"
   ],
   "templating": {
     "list": []
@@ -559,6 +342,6 @@
   "timezone": "browser",
   "title": "Chat Web Minimal Observability",
   "uid": "chat-web-system-overview",
-  "version": 4,
+  "version": 3,
   "weekStart": ""
 }
