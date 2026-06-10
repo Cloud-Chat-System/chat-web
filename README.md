@@ -1,16 +1,14 @@
-# 如何啟動docker
+# 如何啟動project
 ```bash
 cd chat-web
 #複製環境設定檔
 cp .env.example .env
-#確認chat-web docker 是否已經跑起來了(看到chat-web-frontend, chat-web-backend ,postgres:16.6 image)，避免重複build
-docker ps
-#若還沒有跑起來，build image
+docker stop $(docker ps -q)
 docker compose up --build -d
-#若已經跑起來執行watch監控你的修改並主動rebuild
-docker compose watch
-#關掉docker
-docker compose down
+docker compose -f kafka/docker-compose.yml --env-file kafka/.env up -d kafka kafka-ui kafka-exporter
+docker compose -f grafana/docker-compose.yml --env-file grafana/.env up -d
+
+python kafka/scripts/run_backend_message_burst_test.py --base-url http://127.0.0.1:8000 --users 1000 --rooms 1000 --messages-per-room 1 --persistence-samples 50 --persistence-wait-seconds 60 --prepare-concurrency 100 --burst-concurrency 1000 --request-timeout 60
 ```
 訪問website : http://localhost:3000/ 確認frontend有成功連接到backend & database
 

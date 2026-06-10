@@ -48,8 +48,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 6,
+        "h": 6,
+        "w": 4,
         "x": 0,
         "y": 0
       },
@@ -83,14 +83,70 @@
       },
       "fieldConfig": {
         "defaults": {
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "max": 1,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 4,
+        "y": 0
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(pg_up{job=\"postgres-exporter\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Postgres Scrape Status",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
           "unit": "reqps"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 6,
-        "x": 6,
+        "h": 6,
+        "w": 4,
+        "x": 8,
         "y": 0
       },
       "id": 2,
@@ -124,8 +180,8 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 6,
+        "h": 6,
+        "w": 4,
         "x": 12,
         "y": 0
       },
@@ -160,9 +216,9 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 6,
-        "x": 18,
+        "h": 6,
+        "w": 4,
+        "x": 16,
         "y": 0
       },
       "id": 4,
@@ -191,6 +247,42 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "cps"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 4,
+        "x": 20,
+        "y": 0
+      },
+      "id": 12,
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(irate(pg_stat_database_xact_commit{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]) + irate(pg_stat_database_xact_rollback{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
+          "refId": "A"
+        }
+      ],
+      "title": "Postgres Transactions Per Second",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
           "unit": "reqps"
         },
         "overrides": []
@@ -199,7 +291,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 7
+        "y": 6
       },
       "id": 5,
       "targets": [
@@ -227,7 +319,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 7
+        "y": 6
       },
       "id": 6,
       "targets": [
@@ -253,9 +345,9 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 12,
+        "w": 8,
         "x": 0,
-        "y": 16
+        "y": 15
       },
       "id": 9,
       "targets": [
@@ -275,6 +367,72 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      },
+      "id": 14,
+      "targets": [
+        {
+          "expr": "sum(irate(pg_stat_database_tup_inserted{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
+          "legendFormat": "insert",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(irate(pg_stat_database_tup_updated{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
+          "legendFormat": "update",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(irate(pg_stat_database_tup_deleted{job=\"postgres-exporter\",datname=\"chat_app\"}[1m]))",
+          "legendFormat": "delete",
+          "refId": "C"
+        }
+      ],
+      "title": "Postgres Rows Changed Per Second",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      },
+      "id": 15,
+      "targets": [
+        {
+          "expr": "sum by (state) (pg_stat_activity_count{job=\"postgres-exporter\",datname=\"chat_app\"})",
+          "legendFormat": "{{state}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Postgres Sessions by State",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
           "unit": "short"
         },
         "overrides": []
@@ -282,8 +440,8 @@
       "gridPos": {
         "h": 9,
         "w": 12,
-        "x": 12,
-        "y": 16
+        "x": 0,
+        "y": 24
       },
       "id": 7,
       "targets": [
@@ -309,8 +467,8 @@
       "gridPos": {
         "h": 9,
         "w": 12,
-        "x": 0,
-        "y": 25
+        "x": 12,
+        "y": 24
       },
       "id": 8,
       "targets": [
@@ -329,7 +487,8 @@
   "tags": [
     "chat-web",
     "system",
-    "backend"
+    "backend",
+    "postgres"
   ],
   "templating": {
     "list": []
@@ -342,6 +501,6 @@
   "timezone": "browser",
   "title": "Chat Web Minimal Observability",
   "uid": "chat-web-system-overview",
-  "version": 3,
+  "version": 4,
   "weekStart": ""
 }

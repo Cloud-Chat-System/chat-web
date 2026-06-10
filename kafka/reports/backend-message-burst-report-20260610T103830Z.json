@@ -1,0 +1,72 @@
+{
+  "generatedAtUtc": "20260610T103830Z",
+  "scenario": "backend-message-burst",
+  "baseUrl": "http://127.0.0.1:8000",
+  "users": 1000,
+  "rooms": 1000,
+  "roomType": "direct",
+  "messagesPerRoom": 1,
+  "prepareConcurrency": 100,
+  "burstConcurrency": 1000,
+  "sendMessageRequestsPerSecond": 78.02742913870146,
+  "sendMessageCount": 1000,
+  "sendMessageWallSeconds": 12.81600599992089,
+  "persistenceFailures": 0,
+  "phases": [
+    {
+      "name": "register",
+      "count": 1000,
+      "wall_seconds": 20.11691930005327,
+      "requests_per_second": 49.709400583883244,
+      "p50_ms": 1949.0678500151262,
+      "p95_ms": 2512.903899885714,
+      "p99_ms": 2797.640700126067,
+      "max_ms": 2925.4703999031335,
+      "errors": 0
+    },
+    {
+      "name": "login",
+      "count": 1000,
+      "wall_seconds": 19.068103699944913,
+      "requests_per_second": 52.44359983226276,
+      "p50_ms": 1841.1450000712648,
+      "p95_ms": 2421.298800036311,
+      "p99_ms": 2632.2599998675287,
+      "max_ms": 2914.1081001143903,
+      "errors": 0
+    },
+    {
+      "name": "create_room",
+      "count": 1000,
+      "wall_seconds": 19.04734930000268,
+      "requests_per_second": 52.50074350239691,
+      "p50_ms": 1856.1316999839619,
+      "p95_ms": 2277.0491999108344,
+      "p99_ms": 2358.8329998310655,
+      "max_ms": 2424.963800003752,
+      "errors": 0
+    },
+    {
+      "name": "send_message_burst",
+      "count": 1000,
+      "wall_seconds": 12.81600599992089,
+      "requests_per_second": 78.02742913870146,
+      "p50_ms": 6527.191850007512,
+      "p95_ms": 12085.143100004643,
+      "p99_ms": 12099.283799994737,
+      "max_ms": 12116.261300165206,
+      "errors": 0
+    },
+    {
+      "name": "verify_persist",
+      "count": 50,
+      "wall_seconds": 2.6062653998378664,
+      "requests_per_second": 19.184538920368762,
+      "p50_ms": 52.01059998944402,
+      "p95_ms": 52.84400004893541,
+      "p99_ms": 99.81489996425807,
+      "max_ms": 99.81489996425807,
+      "errors": 0
+    }
+  ]
+}
