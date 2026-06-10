@@ -28,6 +28,9 @@ def get_list_env(name: str) -> list[str]:
 load_project_env()
 
 DATABASE_URL = get_env("DATABASE_URL", "sqlite:///./tsmc_messenger.db")
+DB_POOL_SIZE = int(get_env("DB_POOL_SIZE", "30"))
+DB_MAX_OVERFLOW = int(get_env("DB_MAX_OVERFLOW", "50"))
+DB_POOL_TIMEOUT_SECONDS = int(get_env("DB_POOL_TIMEOUT_SECONDS", "60"))
 JWT_SECRET = get_env("JWT_SECRET", "tsmc_messenger_jwt_secret_key_2024_very_secure")
 JWT_ALGORITHM = get_env("JWT_ALGORITHM", "HS256")
 JWT_EXPIRE_HOURS = int(get_env("JWT_EXPIRE_HOURS", "24"))
@@ -35,3 +38,12 @@ BACKEND_HOST = get_env("BACKEND_HOST", "0.0.0.0")
 BACKEND_CONTAINER_PORT = int(get_env("BACKEND_CONTAINER_PORT", "8000"))
 FRONTEND_URL = get_env("FRONTEND_URL", "")
 CORS_ALLOWED_ORIGINS = get_list_env("CORS_ALLOWED_ORIGINS")
+KAFKA_MESSAGE_FLOW_ENABLED = get_env("KAFKA_MESSAGE_FLOW_ENABLED", "false").lower() == "true"
+KAFKA_BOOTSTRAP_SERVERS = get_env("KAFKA_BOOTSTRAP_SERVERS", "kafka:9092")
+KAFKA_TOPIC_CHAT_EVENTS = get_env("KAFKA_TOPIC_CHAT_EVENTS", "chat.events")
+KAFKA_CONSUMER_GROUP = get_env("KAFKA_CONSUMER_GROUP", "chat-message-db-writer")
+KAFKA_PRODUCE_TIMEOUT_SECONDS = float(get_env("KAFKA_PRODUCE_TIMEOUT_SECONDS", "10"))
+KAFKA_PERSIST_TIMEOUT_SECONDS = float(get_env("KAFKA_PERSIST_TIMEOUT_SECONDS", "10"))
+KAFKA_PERSIST_POLL_INTERVAL_SECONDS = float(
+    get_env("KAFKA_PERSIST_POLL_INTERVAL_SECONDS", "0.05")
+)

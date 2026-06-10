@@ -30,7 +30,35 @@ services:
       - ./database:/database:ro
     env_file:
       - .env
+    environment:
+      KAFKA_MESSAGE_FLOW_ENABLED: ${KAFKA_MESSAGE_FLOW_ENABLED:-false}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:${KAFKA_INTERNAL_PORT:-9092}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP:-chat-message-db-writer}
     command: sh -c "uvicorn app.main:app --host ${BACKEND_HOST} --port ${BACKEND_CONTAINER_PORT} --reload"
+    depends_on:
+      db:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: rebuild
+          path: ./backend/requirements.txt
+        - action: rebuild
+          path: ./backend/Dockerfile
+
+  backend-consumer:
+    build: ./backend
+    container_name: chat_backend_consumer
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    volumes:
+      - ./backend:/app
+      - ./database:/database:ro
+    env_file:
+      - .env
+    environment:
+      KAFKA_MESSAGE_FLOW_ENABLED: "true"
+      KAFKA_BOOTSTRAP_SERVERS: kafka:${KAFKA_INTERNAL_PORT:-9092}
+      KAFKA_CONSUMER_GROUP: ${KAFKA_CONSUMER_GROUP:-chat-message-db-writer}
+    command: sh -c "python -m app.kafka_consumer"
     depends_on:
       db:
         condition: service_healthy

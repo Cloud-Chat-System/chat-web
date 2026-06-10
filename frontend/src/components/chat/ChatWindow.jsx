@@ -86,8 +86,6 @@ export default function ChatWindow({ onBack }) {
             name={activeRoom.name}
             avatar={activeRoom.avatar}
             size="md"
-            online={isOnline}
-            showStatus={!activeRoom.isGroup}
           />
           <div className={chatStyles.chatHeaderInfo}>
             <div className={chatStyles.chatHeaderName} data-testid="active-chat-name">{activeRoom.name}</div>
