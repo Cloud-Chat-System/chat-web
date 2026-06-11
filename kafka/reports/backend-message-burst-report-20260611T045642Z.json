@@ -1,0 +1,72 @@
+{
+  "generatedAtUtc": "20260611T045642Z",
+  "scenario": "backend-message-burst",
+  "baseUrl": "http://127.0.0.1:8000",
+  "users": 400,
+  "rooms": 400,
+  "roomType": "direct",
+  "messagesPerRoom": 1,
+  "prepareConcurrency": 100,
+  "burstConcurrency": 400,
+  "sendMessageRequestsPerSecond": 45.61038002990833,
+  "sendMessageCount": 400,
+  "sendMessageWallSeconds": 8.769933504998335,
+  "persistenceFailures": 0,
+  "phases": [
+    {
+      "name": "register",
+      "count": 400,
+      "wall_seconds": 68.66485019800166,
+      "requests_per_second": 5.825396820157064,
+      "p50_ms": 15850.532044998545,
+      "p95_ms": 24575.76264200179,
+      "p99_ms": 25332.418395002605,
+      "max_ms": 25876.52545599849,
+      "errors": 0
+    },
+    {
+      "name": "login",
+      "count": 400,
+      "wall_seconds": 63.520099771005334,
+      "requests_per_second": 6.2972193280871664,
+      "p50_ms": 13626.250538502063,
+      "p95_ms": 22945.9230700013,
+      "p99_ms": 25812.98768200213,
+      "max_ms": 26086.75177999976,
+      "errors": 0
+    },
+    {
+      "name": "create_room",
+      "count": 400,
+      "wall_seconds": 18.49722040299821,
+      "requests_per_second": 21.62487072572072,
+      "p50_ms": 4470.594621998316,
+      "p95_ms": 5010.386966001533,
+      "p99_ms": 5261.894788003701,
+      "max_ms": 5301.548738003476,
+      "errors": 0
+    },
+    {
+      "name": "send_message_burst",
+      "count": 400,
+      "wall_seconds": 8.769933504998335,
+      "requests_per_second": 45.61038002990833,
+      "p50_ms": 5508.478260999254,
+      "p95_ms": 8308.980846995837,
+      "p99_ms": 8444.299089998822,
+      "max_ms": 8511.340062999807,
+      "errors": 0
+    },
+    {
+      "name": "verify_persist",
+      "count": 50,
+      "wall_seconds": 2.353844641998876,
+      "requests_per_second": 21.24184370874205,
+      "p50_ms": 47.38384249867522,
+      "p95_ms": 51.114599002175964,
+      "p99_ms": 54.12919499940472,
+      "max_ms": 54.12919499940472,
+      "errors": 0
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "generatedAtUtc": "20260611T050211Z",
+  "scenario": "backend-message-burst",
+  "baseUrl": "http://127.0.0.1:8000",
+  "users": 450,
+  "rooms": 450,
+  "roomType": "direct",
+  "messagesPerRoom": 1,
+  "prepareConcurrency": 100,
+  "burstConcurrency": 450,
+  "sendMessageRequestsPerSecond": 28.404502765987484,
+  "sendMessageCount": 450,
+  "sendMessageWallSeconds": 15.84255861499696,
+  "persistenceFailures": 0,
+  "phases": [
+    {
+      "name": "register",
+      "count": 450,
+      "wall_seconds": 81.97972154500167,
+      "requests_per_second": 5.489162338188457,
+      "p50_ms": 16807.094861000223,
+      "p95_ms": 23389.274200999353,
+      "p99_ms": 28658.0273859945,
+      "max_ms": 28993.533841996395,
+      "errors": 0
+    },
+    {
+      "name": "login",
+      "count": 450,
+      "wall_seconds": 70.16728798900294,
+      "requests_per_second": 6.413244873744113,
+      "p50_ms": 13507.660455001314,
+      "p95_ms": 19627.83611800114,
+      "p99_ms": 24336.56709099887,
+      "max_ms": 24413.670618996548,
+      "errors": 0
+    },
+    {
+      "name": "create_room",
+      "count": 450,
+      "wall_seconds": 22.548460602003615,
+      "requests_per_second": 19.957016487414393,
+      "p50_ms": 4883.097871497739,
+      "p95_ms": 5902.837895999255,
+      "p99_ms": 6024.674234002305,
+      "max_ms": 6502.776296001684,
+      "errors": 0
+    },
+    {
+      "name": "send_message_burst",
+      "count": 450,
+      "wall_seconds": 15.84255861499696,
+      "requests_per_second": 28.404502765987484,
+      "p50_ms": 7435.5404525013,
+      "p95_ms": 15265.772295002535,
+      "p99_ms": 15484.6851350012,
+      "max_ms": 15531.270883002435,
+      "errors": 0
+    },
+    {
+      "name": "verify_persist",
+      "count": 50,
+      "wall_seconds": 2.371323740000662,
+      "requests_per_second": 21.085269445320883,
+      "p50_ms": 47.89646399876801,
+      "p95_ms": 49.95334800332785,
+      "p99_ms": 59.92774400510825,
+      "max_ms": 59.92774400510825,
+      "errors": 0
+    }
+  ]
+}

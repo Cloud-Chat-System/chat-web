@@ -19,7 +19,6 @@ sed -i "s|^KAFKA_ADVERTISED_HOST=.*|KAFKA_ADVERTISED_HOST=${VMIP}|" .env
 
 docker stop $(docker ps -q)
 docker compose -f grafana/docker-compose.yml --env-file grafana/.env up -d
-docker compose up -d --build
+docker compose up --build -d
 docker compose -f kafka/docker-compose.yml --env-file kafka/.env up -d kafka kafka-ui kafka-exporter
-docker compose -f kafka/docker-compose.yml --env-file kafka/.env --profile consumer-demo up -d mock-slow-consumer
-python3 kafka/scripts/run_kafka_load_test.py --profile kafka/load-profile.example.json
+

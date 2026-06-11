@@ -37,6 +37,11 @@ It runs `kafka-producer-perf-test.sh` inside the Kafka container and:
 4. Writes a JSON report under `kafka/reports/`
 5. Estimates required Kafka VM count using the best sustainable throughput observed on the current machine
 
+Keep the broker-level load-test topic separate from the real application topic.
+`run_kafka_load_test.py` writes raw payloads that are not valid chat event JSON, so
+its profile should use `chat.load-test.events`. The backend app and
+`backend-consumer` should use `KAFKA_TOPIC_CHAT_EVENTS=chat.app.events`.
+
 For end-to-end message pressure tests, use the backend burst runner instead.
 The Docker app stack now routes `POST /chatrooms/{room_id}/messages` through Kafka:
 
@@ -198,6 +203,14 @@ docker compose -f kafka/docker-compose.yml --env-file kafka/.env --profile consu
 - `KAFKA_MOCK_AUTO_OFFSET_RESET`: consumer group 沒有既有 offset 時從哪裡開始消費。`earliest` 代表從最早訊息開始，`latest` 代表只吃新訊息。
 
 ## Profile Fields
+
+Topic names are controlled from the repo-level `.env`:
+
+- `KAFKA_TOPIC_CHAT_EVENTS`: real app JSON message topic, used by backend and `backend-consumer`.
+- `KAFKA_TOPIC_LOAD_TEST_EVENTS`: raw broker load-test topic, used by `run_kafka_load_test.py`.
+
+`kafka/load-profile.example.json` intentionally does not define `topic`; the
+runner reads `.env` and applies `KAFKA_TOPIC_LOAD_TEST_EVENTS`.
 
 `kafka/load-profile.example.json` 是 Kafka staged load test 的主要壓測設定。
 

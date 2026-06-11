@@ -1,6 +1,5 @@
 {
   "scenarioName": "steady-state-throughput-and-online-users",
-  "topic": "chat.events",
   "partitions": 12,
   "replicationFactor": 1,
   "bootstrapServer": "kafka:9092",

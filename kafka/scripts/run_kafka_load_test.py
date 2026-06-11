@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import os
 import re
 import subprocess
 from dataclasses import asdict, dataclass
@@ -26,7 +27,7 @@ SUMMARY_PATTERN = re.compile(
 
 DEFAULT_PROFILE = {
     "scenarioName": "steady-state-throughput-and-online-users",
-    "topic": "chat.events",
+    "topic": "chat.load-test.events",
     "partitions": 12,
     "replicationFactor": 1,
     "messageSizeBytes": 512,
@@ -68,12 +69,25 @@ class StageResult:
 def read_profile(path: Path) -> dict[str, Any]:
     profile = json.loads(path.read_text(encoding="utf-8"))
     merged = {**DEFAULT_PROFILE, **profile}
+    merged["topic"] = os.getenv("KAFKA_TOPIC_LOAD_TEST_EVENTS", str(merged["topic"]))
     merged["stageRatesPerSecond"] = profile.get(
         "stageRatesPerSecond",
         DEFAULT_PROFILE["stageRatesPerSecond"],
     )
     merged["notes"] = profile.get("notes", DEFAULT_PROFILE["notes"])
     return merged
+
+
+def load_env_defaults(path: Path) -> None:
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or "=" not in stripped:
+            continue
+        key, value = stripped.split("=", 1)
+        value = value.strip().strip('"').strip("'")
+        os.environ.setdefault(key.strip(), value)
 
 
 def parse_args() -> argparse.Namespace:
@@ -343,6 +357,8 @@ def save_report(
 
 def main() -> int:
     args = parse_args()
+    repo_root = Path(__file__).resolve().parents[2]
+    load_env_defaults(repo_root / ".env")
     profile = read_profile(args.profile)
     rates = parse_rates(args.rates, profile)
     duration_seconds = args.stage_duration_seconds or int(profile["stageDurationSeconds"])

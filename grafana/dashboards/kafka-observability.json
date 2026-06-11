@@ -563,51 +563,52 @@
       {
         "current": {
           "selected": true,
-          "text": "chat.events",
-          "value": "chat.events"
+          "text": "chat.load-test.events",
+          "value": "chat.load-test.events"
         },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(kafka_topic_partition_current_offset, topic)",
         "hide": 0,
         "includeAll": false,
         "label": "Topic",
         "multi": false,
         "name": "topic",
-        "options": [
-          {
-            "selected": true,
-            "text": "chat.events",
-            "value": "chat.events"
-          }
-        ],
-        "query": "chat.events",
+        "options": [],
+        "query": {
+          "query": "label_values(kafka_topic_partition_current_offset, topic)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
         "skipUrlSync": false,
-        "type": "custom"
+        "type": "query"
       },
       {
         "current": {
           "selected": true,
-          "text": "chat-message-db-writer",
-          "value": "chat-message-db-writer"
+          "text": "mock-slow-consumer",
+          "value": "mock-slow-consumer"
         },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(kafka_consumergroup_current_offset, consumergroup)",
         "hide": 0,
         "includeAll": false,
         "label": "Consumer Group",
         "multi": false,
         "name": "group",
-        "options": [
-          {
-            "selected": true,
-            "text": "chat-message-db-writer",
-            "value": "chat-message-db-writer"
-          },
-          {
-            "selected": false,
-            "text": "mock-slow-consumer",
-            "value": "mock-slow-consumer"
-          }
-        ],
-        "query": "chat-message-db-writer,mock-slow-consumer",
+        "options": [],
+        "query": {
+          "query": "label_values(kafka_consumergroup_current_offset, consumergroup)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 2,
         "skipUrlSync": false,
-        "type": "custom"
+        "type": "query"
       }
     ]
   },

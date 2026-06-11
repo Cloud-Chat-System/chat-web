@@ -1,47 +1,33 @@
-# 如何啟動project
+# 如何在VM上啟動project
+## Step 1 複製環境變數
 ```bash
 cd chat-web
 #複製環境設定檔
 cp .env.example .env
-docker stop $(docker ps -q)
-docker compose up --build -d
-docker compose -f kafka/docker-compose.yml --env-file kafka/.env up -d kafka kafka-ui kafka-exporter
-docker compose -f grafana/docker-compose.yml --env-file grafana/.env up -d
-
-python kafka/scripts/run_backend_message_burst_test.py --base-url http://127.0.0.1:8000 --users 1000 --rooms 1000 --messages-per-room 1 --persistence-samples 50 --persistence-wait-seconds 60 --prepare-concurrency 100 --burst-concurrency 1000 --request-timeout 60
+cp kafka/.env.example kafka/.env
+cp grafana/.env.example grafana/.env
 ```
-訪問website : http://localhost:3000/ 確認frontend有成功連接到backend & database
+## Step 2 修改/kafka/.env
+- 把`KAFKA_ADVERTISED_HOST` 改成VMIP
 
-# 查看databse中已經存放的資料
+## Step3 執行腳本會自動生成憑證&設定環境變數
+- ./run_VM.sh
+
+訪問website : http://VMIP:3000/ 
+訪問grafana : https://VMIP:3001/
+
+# 如何在VM上跑kafka壓測
+
+## Step 1 修改環境變數
 ```bash
-# 執行container中的database
-docker compose exec db psql -U chat_user -d chat_app
-
-SELECT * FROM users;
-SELECT * FROM chat_rooms;
-SELECT * FROM chat_room_members;
-SELECT * FROM messages;
-SELECT * FROM notifications;
-SELECT * FROM user_presence;
+cd chat-web
 ```
-# 如果修改了database需要重新build
+修改.env 設定 `KAFKA_MESSAGE_FLOW_ENABLED=false`
+## Step2 跑測試腳本
 ```bash
-make reset-db
+#測試1000msg/s
+python3 kafka/scripts/run_backend_message_burst_test.py --base-url http://127.0.0.1:8000 --users 1000 --rooms 1000 --messages-per-room 1 --persistence-samples 50 --persistence-wait-seconds 60 --prepare-concurrency 100 --burst-concurrency 1000 --request-timeout 60
 ```
-# 快捷指令列表
-
-
-| Make 指令         | 實際 Docker 指令                                          | 用途                           |
-| --------------- | ----------------------------------------------------- | ---------------------------- |
-| `make ps`       | `docker compose ps`                                   | 查看 containers 狀態             |
-| `make dev`      | `docker compose up --build`                           | build 並啟動服務，log 顯示在前景，ctrl-C會自動停掉服務       |
-| `make dev-d`    | `docker compose up --build -d`                        | build 並在背景啟動服務               |
-| `make logs`     | `docker compose logs -f`                              | 查看即時 logs                    |
-| `make watch`    | `docker compose watch`                                | 監控任何frontend & backend修改自動rebuild            |
-| `make down`     | `docker compose down`                                 | 停止並移除 containers，但保留 volumes (database) |
-| `make reset-db` | `docker compose down -v && docker compose up --build -d` | 刪除 volumes，重建資料庫並啟動服務        |
----
-# Frontend & Backend Code Convergence
-
-**Main Branch:** [![codecov](https://codecov.io/gh/Cloud-Chat-System/chat-web/graph/badge.svg?token=P18Y0ZGGHI)](https://codecov.io/gh/Cloud-Chat-System/chat-web)
-**ci-and-lint Branch:** [![codecov](https://codecov.io/gh/Cloud-Chat-System/chat-web/branch/ci-and-lint/graph/badge.svg?token=P18Y0ZGGHI)](https://codecov.io/gh/Cloud-Chat-System/chat-web)
+# DEMO vedio
+grafana demo vedio : https://youtu.be/YAtnq4d0Vd0
+kafka stress test vedio : https://youtu.be/cNAo0iteeWs

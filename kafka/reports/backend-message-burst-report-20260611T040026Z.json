@@ -1,0 +1,72 @@
+{
+  "generatedAtUtc": "20260611T040026Z",
+  "scenario": "backend-message-burst",
+  "baseUrl": "http://127.0.0.1:8000",
+  "users": 10,
+  "rooms": 10,
+  "roomType": "direct",
+  "messagesPerRoom": 1,
+  "prepareConcurrency": 100,
+  "burstConcurrency": 10,
+  "sendMessageRequestsPerSecond": 15.57516247340113,
+  "sendMessageCount": 10,
+  "sendMessageWallSeconds": 0.6420478770014597,
+  "persistenceFailures": 0,
+  "phases": [
+    {
+      "name": "register",
+      "count": 10,
+      "wall_seconds": 1.6317922989983344,
+      "requests_per_second": 6.128230906677546,
+      "p50_ms": 1610.1039285022125,
+      "p95_ms": 1629.1929650033126,
+      "p99_ms": 1629.1929650033126,
+      "max_ms": 1629.1929650033126,
+      "errors": 0
+    },
+    {
+      "name": "login",
+      "count": 10,
+      "wall_seconds": 1.8343941869970877,
+      "requests_per_second": 5.451391021016072,
+      "p50_ms": 1812.0273675012868,
+      "p95_ms": 1830.9436839990667,
+      "p99_ms": 1830.9436839990667,
+      "max_ms": 1830.9436839990667,
+      "errors": 0
+    },
+    {
+      "name": "create_room",
+      "count": 10,
+      "wall_seconds": 0.4639585190016078,
+      "requests_per_second": 21.55365100638522,
+      "p50_ms": 422.00498550300836,
+      "p95_ms": 460.7654259962146,
+      "p99_ms": 460.7654259962146,
+      "max_ms": 460.7654259962146,
+      "errors": 0
+    },
+    {
+      "name": "send_message_burst",
+      "count": 10,
+      "wall_seconds": 0.6420478770014597,
+      "requests_per_second": 15.57516247340113,
+      "p50_ms": 528.6784089985304,
+      "p95_ms": 638.1505309982458,
+      "p99_ms": 638.1505309982458,
+      "max_ms": 638.1505309982458,
+      "errors": 0
+    },
+    {
+      "name": "verify_persist",
+      "count": 10,
+      "wall_seconds": 0.45495207099884283,
+      "requests_per_second": 21.980337352998742,
+      "p50_ms": 48.03702100616647,
+      "p95_ms": 55.84247599472292,
+      "p99_ms": 55.84247599472292,
+      "max_ms": 55.84247599472292,
+      "errors": 0
+    }
+  ]
+}
